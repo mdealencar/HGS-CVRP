@@ -12,7 +12,8 @@ set(
         Program/Split.cpp
         Program/InstanceCVRPLIB.cpp
         Program/AlgorithmParameters.cpp
-        Program/C_Interface.cpp)
+        Program/C_Interface.cpp
+        Program/Logger.cpp)
 
 if (MSVC)
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)

@@ -39,6 +39,21 @@ struct Solution *solve_cvrp_dist_mtx(
 #ifdef __cplusplus
 extern "C"
 #endif
+void hgs_set_output_stdout();
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void hgs_set_output_stderr();
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int hgs_set_output_file(const char *filePath);
+
+#ifdef __cplusplus
+extern "C"
+#endif
 void delete_solution(struct Solution * sol);
 
 

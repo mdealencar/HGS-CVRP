@@ -1,4 +1,5 @@
 #include "Params.h"
+#include "Logger.h"
 
 // The universal constructor for both executable and shared library
 // When the executable is run from the commandline,
@@ -57,19 +58,19 @@ Params::Params(
 	}
 
 	if (verbose && ap.useSwapStar == 1 && !areCoordinatesProvided)
-		std::cout << "----- NO COORDINATES HAVE BEEN PROVIDED, SWAP* NEIGHBORHOOD WILL BE DEACTIVATED BY DEFAULT" << std::endl;
+		hgs_log_stream() << "----- NO COORDINATES HAVE BEEN PROVIDED, SWAP* NEIGHBORHOOD WILL BE DEACTIVATED BY DEFAULT" << std::endl;
 
 	// Default initialization if the number of vehicles has not been provided by the user
 	if (nbVehicles == INT_MAX)
 	{
 		nbVehicles = (int)std::ceil(1.3*totalDemand/vehicleCapacity) + 3;  // Safety margin: 30% + 3 more vehicles than the trivial bin packing LB
 		if (verbose) 
-			std::cout << "----- FLEET SIZE WAS NOT SPECIFIED: DEFAULT INITIALIZATION TO " << nbVehicles << " VEHICLES" << std::endl;
+			hgs_log_stream() << "----- FLEET SIZE WAS NOT SPECIFIED: DEFAULT INITIALIZATION TO " << nbVehicles << " VEHICLES" << std::endl;
 	}
 	else
 	{
 		if (verbose)
-			std::cout << "----- FLEET SIZE SPECIFIED: SET TO " << nbVehicles << " VEHICLES" << std::endl;
+			hgs_log_stream() << "----- FLEET SIZE SPECIFIED: SET TO " << nbVehicles << " VEHICLES" << std::endl;
 	}
 
 	// Calculation of the maximum distance
@@ -117,7 +118,7 @@ Params::Params(
 	penaltyCapacity = std::max<double>(0.1, std::min<double>(1000., maxDist / maxDemand));
 
 	if (verbose)
-		std::cout << "----- INSTANCE SUCCESSFULLY LOADED WITH " << nbClients << " CLIENTS AND " << nbVehicles << " VEHICLES" << std::endl;
+		hgs_log_stream() << "----- INSTANCE SUCCESSFULLY LOADED WITH " << nbClients << " CLIENTS AND " << nbVehicles << " VEHICLES" << std::endl;
 }
 
 
