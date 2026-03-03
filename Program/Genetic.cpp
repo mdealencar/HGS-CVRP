@@ -1,4 +1,5 @@
 #include "Genetic.h"
+#include "Logger.h"
 
 void Genetic::run()
 {	
@@ -7,7 +8,7 @@ void Genetic::run()
 
 	int nbIter;
 	int nbIterNonProd = 1;
-	if (params.verbose) std::cout << "----- STARTING GENETIC ALGORITHM" << std::endl;
+	if (params.verbose) hgs_log_stream() << "----- STARTING GENETIC ALGORITHM" << std::endl;
 	for (nbIter = 0 ; nbIterNonProd <= params.ap.nbIter && (params.ap.timeLimit == 0 || (double)(clock()-params.startTime)/(double)CLOCKS_PER_SEC < params.ap.timeLimit) ; nbIter++)
 	{	
 		/* SELECTION AND CROSSOVER */
@@ -37,7 +38,7 @@ void Genetic::run()
 			nbIterNonProd = 1;
 		}
 	}
-	if (params.verbose) std::cout << "----- GENETIC ALGORITHM FINISHED AFTER " << nbIter << " ITERATIONS. TIME SPENT: " << (double)(clock() - params.startTime) / (double)CLOCKS_PER_SEC << std::endl;
+	if (params.verbose) hgs_log_stream() << "----- GENETIC ALGORITHM FINISHED AFTER " << nbIter << " ITERATIONS. TIME SPENT: " << (double)(clock() - params.startTime) / (double)CLOCKS_PER_SEC << std::endl;
 }
 
 void Genetic::crossoverOX(Individual & result, const Individual & parent1, const Individual & parent2)

@@ -147,6 +147,16 @@ make lib_test_c
 ctest -R lib --verbose
 ```
 
+### Redirecting library logs (useful for Python bindings)
+
+When the solver is called through the shared library, logs can be redirected with the C API:
+
+- `hgs_set_output_stdout()` (default)
+- `hgs_set_output_stderr()`
+- `hgs_set_output_file(const char* filePath)`
+
+This makes it easy to capture solver output from Python bindings by sending logs to a file or `stderr`.
+
 ## Contributing
 
 Thank you very much for your interest in this code.

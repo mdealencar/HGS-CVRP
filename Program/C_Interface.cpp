@@ -1,4 +1,5 @@
 //
+#include "Logger.h"
 // Created by chkwon on 3/23/22.
 //
 
@@ -81,8 +82,8 @@ extern "C" Solution *solve_cvrp(
 		solver.run();
 		result = prepare_solution(solver.population, params);
 	}
-	catch (const std::string &e) { std::cout << "EXCEPTION | " << e << std::endl; }
-	catch (const std::exception &e) { std::cout << "EXCEPTION | " << e.what() << std::endl; }
+	catch (const std::string &e) { hgs_log_stream() << "EXCEPTION | " << e << std::endl; }
+	catch (const std::exception &e) { hgs_log_stream() << "EXCEPTION | " << e.what() << std::endl; }
 
 	return result;
 }
@@ -119,8 +120,8 @@ extern "C" Solution *solve_cvrp_dist_mtx(
 		solver.run();
 		result = prepare_solution(solver.population, params);
 	}
-	catch (const std::string &e) { std::cout << "EXCEPTION | " << e << std::endl; }
-	catch (const std::exception &e) { std::cout << "EXCEPTION | " << e.what() << std::endl; }
+	catch (const std::string &e) { hgs_log_stream() << "EXCEPTION | " << e << std::endl; }
+	catch (const std::exception &e) { hgs_log_stream() << "EXCEPTION | " << e.what() << std::endl; }
 
 	return result;
 }

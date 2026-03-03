@@ -1,8 +1,11 @@
 #include "Population.h"
+#include "Logger.h"
+#include <iomanip>
+#include <sstream>
 
 void Population::generatePopulation()
 {
-	if (params.verbose) std::cout << "----- BUILDING INITIAL POPULATION" << std::endl;
+	if (params.verbose) hgs_log_stream() << "----- BUILDING INITIAL POPULATION" << std::endl;
 	for (int i = 0; i < 4*params.ap.mu && (i == 0 || params.ap.timeLimit == 0 || (double)(clock() - params.startTime) / (double)CLOCKS_PER_SEC < params.ap.timeLimit) ; i++)
 	{
 		Individual randomIndiv(params);
@@ -127,7 +130,7 @@ void Population::removeWorstBiasedFitness(SubPopulation & pop)
 
 void Population::restart()
 {
-	if (params.verbose) std::cout << "----- RESET: CREATING A NEW POPULATION -----" << std::endl;
+	if (params.verbose) hgs_log_stream() << "----- RESET: CREATING A NEW POPULATION -----" << std::endl;
 	for (Individual * indiv : feasibleSubpop) delete indiv ;
 	for (Individual * indiv : infeasibleSubpop) delete indiv;
 	feasibleSubpop.clear();
@@ -211,18 +214,22 @@ void Population::printState(int nbIter, int nbIterNoImprovement)
 {
 	if (params.verbose)
 	{
-		std::printf("It %6d %6d | T(s) %.2f", nbIter, nbIterNoImprovement, (double)(clock()-params.startTime)/(double)CLOCKS_PER_SEC);
+		std::ostringstream trace;
+		trace << "It " << std::setw(6) << nbIter
+			<< " " << std::setw(6) << nbIterNoImprovement
+			<< " | T(s) " << std::fixed << std::setprecision(2)
+			<< (double)(clock()-params.startTime)/(double)CLOCKS_PER_SEC;
 
-		if (getBestFeasible() != NULL) std::printf(" | Feas %zu %.2f %.2f", feasibleSubpop.size(), getBestFeasible()->eval.penalizedCost, getAverageCost(feasibleSubpop));
-		else std::printf(" | NO-FEASIBLE");
+		if (getBestFeasible() != NULL) trace << " | Feas " << feasibleSubpop.size() << " " << getBestFeasible()->eval.penalizedCost << " " << getAverageCost(feasibleSubpop);
+		else trace << " | NO-FEASIBLE";
 
-		if (getBestInfeasible() != NULL) std::printf(" | Inf %zu %.2f %.2f", infeasibleSubpop.size(), getBestInfeasible()->eval.penalizedCost, getAverageCost(infeasibleSubpop));
-		else std::printf(" | NO-INFEASIBLE");
+		if (getBestInfeasible() != NULL) trace << " | Inf " << infeasibleSubpop.size() << " " << getBestInfeasible()->eval.penalizedCost << " " << getAverageCost(infeasibleSubpop);
+		else trace << " | NO-INFEASIBLE";
 
-		std::printf(" | Div %.2f %.2f", getDiversity(feasibleSubpop), getDiversity(infeasibleSubpop));
-		std::printf(" | Feas %.2f %.2f", (double)std::count(listFeasibilityLoad.begin(), listFeasibilityLoad.end(), true) / (double)listFeasibilityLoad.size(), (double)std::count(listFeasibilityDuration.begin(), listFeasibilityDuration.end(), true) / (double)listFeasibilityDuration.size());
-		std::printf(" | Pen %.2f %.2f", params.penaltyCapacity, params.penaltyDuration);
-		std::cout << std::endl;
+		trace << " | Div " << getDiversity(feasibleSubpop) << " " << getDiversity(infeasibleSubpop);
+		trace << " | Feas " << (double)std::count(listFeasibilityLoad.begin(), listFeasibilityLoad.end(), true) / (double)listFeasibilityLoad.size() << " " << (double)std::count(listFeasibilityDuration.begin(), listFeasibilityDuration.end(), true) / (double)listFeasibilityDuration.size();
+		trace << " | Pen " << params.penaltyCapacity << " " << params.penaltyDuration;
+		hgs_log_stream() << trace.str() << std::endl;
 	}
 }
 
@@ -291,7 +298,7 @@ void Population::exportCVRPLibFormat(const Individual & indiv, std::string fileN
 		}
 		myfile << "Cost " << indiv.eval.penalizedCost << std::endl;
 	}
-	else std::cout << "----- IMPOSSIBLE TO OPEN: " << fileName << std::endl;
+	else hgs_log_stream() << "----- IMPOSSIBLE TO OPEN: " << fileName << std::endl;
 }
 
 Population::Population(Params & params, Split & split, LocalSearch & localSearch) : params(params), split(split), localSearch(localSearch), bestSolutionRestart(params), bestSolutionOverall(params)
