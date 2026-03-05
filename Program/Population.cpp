@@ -1,11 +1,10 @@
 #include "Population.h"
-#include "Logger.h"
 #include <iomanip>
 #include <sstream>
 
 void Population::generatePopulation()
 {
-	if (params.verbose) hgs_log_stream() << "----- BUILDING INITIAL POPULATION" << std::endl;
+	if (params.verbose) params.logStream << "----- BUILDING INITIAL POPULATION" << std::endl;
 	for (int i = 0; i < 4*params.ap.mu && (i == 0 || params.ap.timeLimit == 0 || std::chrono::duration<double>(std::chrono::steady_clock::now() - params.startTime).count() < params.ap.timeLimit) ; i++)
 	{
 		Individual randomIndiv(params);
@@ -130,7 +129,7 @@ void Population::removeWorstBiasedFitness(SubPopulation & pop)
 
 void Population::restart()
 {
-	if (params.verbose) hgs_log_stream() << "----- RESET: CREATING A NEW POPULATION -----" << std::endl;
+	if (params.verbose) params.logStream << "----- RESET: CREATING A NEW POPULATION -----" << std::endl;
 	for (Individual * indiv : feasibleSubpop) delete indiv ;
 	for (Individual * indiv : infeasibleSubpop) delete indiv;
 	feasibleSubpop.clear();
@@ -229,7 +228,7 @@ void Population::printState(int nbIter, int nbIterNoImprovement)
 		trace << " | Div " << getDiversity(feasibleSubpop) << " " << getDiversity(infeasibleSubpop);
 		trace << " | Feas " << (double)std::count(listFeasibilityLoad.begin(), listFeasibilityLoad.end(), true) / (double)listFeasibilityLoad.size() << " " << (double)std::count(listFeasibilityDuration.begin(), listFeasibilityDuration.end(), true) / (double)listFeasibilityDuration.size();
 		trace << " | Pen " << params.penaltyCapacity << " " << params.penaltyDuration;
-		hgs_log_stream() << trace.str() << std::endl;
+		params.logStream << trace.str() << std::endl;
 	}
 }
 
@@ -298,7 +297,7 @@ void Population::exportCVRPLibFormat(const Individual & indiv, std::string fileN
 		}
 		myfile << "Cost " << indiv.eval.penalizedCost << std::endl;
 	}
-	else hgs_log_stream() << "----- IMPOSSIBLE TO OPEN: " << fileName << std::endl;
+	else params.logStream << "----- IMPOSSIBLE TO OPEN: " << fileName << std::endl;
 }
 
 Population::Population(Params & params, Split & split, LocalSearch & localSearch) : params(params), split(split), localSearch(localSearch), bestSolutionRestart(params), bestSolutionOverall(params)

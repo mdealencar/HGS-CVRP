@@ -11,9 +11,7 @@ set(
         Program/Population.cpp
         Program/Split.cpp
         Program/InstanceCVRPLIB.cpp
-        Program/AlgorithmParameters.cpp
-        Program/C_Interface.cpp
-        Program/Logger.cpp)
+        Program/AlgorithmParameters.cpp)
 
 if (MSVC)
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -70,17 +68,17 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
                                         -DROUND=0
                                         -P ${PROJECT_SOURCE_DIR}/Test/TestExecutable.cmake)
 
-    # Test Library
+    # Test Library (C++ interface)
     add_subdirectory(Test/Test-c/)
-    add_test(NAME       lib_test_c
-             COMMAND    lib_test_c)
+    add_test(NAME       lib_test_cpp
+             COMMAND    lib_test_cpp)
 
     # Install
     install(TARGETS lib
             DESTINATION lib)
     install(TARGETS bin
             DESTINATION bin)
-    install(FILES Program/AlgorithmParameters.h Program/C_Interface.h
+    install(FILES Program/AlgorithmParameters.h
             DESTINATION include)
 endif()
 

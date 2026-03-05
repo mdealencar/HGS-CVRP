@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 		CommandLine commandline(argc, argv);
 
 		// Print all algorithm parameter values
-		if (commandline.verbose) print_algorithm_parameters(commandline.ap);
+		if (commandline.verbose) print_algorithm_parameters(commandline.ap, std::cout);
 
 		// Reading the data file and initializing some data structures
 		if (commandline.verbose) std::cout << "----- READING INSTANCE: " << commandline.pathInstance << std::endl;

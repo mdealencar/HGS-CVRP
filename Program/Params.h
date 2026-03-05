@@ -38,6 +38,7 @@ SOFTWARE.*/
 #include <algorithm>
 #include <unordered_set>
 #include <random>
+#include <ostream>
 #define MY_EPSILON 0.00001 // Precision parameter, used to avoid numerical instabilities
 #define PI 3.14159265359
 
@@ -59,6 +60,7 @@ public:
 	/* PARAMETERS OF THE GENETIC ALGORITHM */
 	bool verbose;                       // Controls verbose level through the iterations
 	AlgorithmParameters ap;	            // Main parameters of the HGS algorithm
+	std::ostream& logStream;            // Per-instance log output stream
 
 	/* ADAPTIVE PENALTY COEFFICIENTS */
 	double penaltyCapacity;				// Penalty for one unit of capacity excess (adapted through the search)
@@ -95,7 +97,8 @@ public:
 		int nbVeh,
 		bool isDurationConstraint,
 		bool verbose,
-		const AlgorithmParameters& ap);
+		const AlgorithmParameters& ap,
+		std::ostream& logStream = std::cout);
 };
 #endif
 

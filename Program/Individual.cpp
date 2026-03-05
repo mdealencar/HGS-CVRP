@@ -1,5 +1,4 @@
-#include "Individual.h" 
-#include "Logger.h"
+#include "Individual.h"
 
 void Individual::evaluateCompleteCost(const Params & params)
 {
@@ -75,7 +74,7 @@ Individual::Individual(Params & params, std::string fileName) : Individual(param
 		if ((int)chromT.size() != params.nbClients) throw std::string("Input solution does not contain the correct number of clients");
 		if (!eval.isFeasible) throw std::string("Input solution is infeasible");
 		if (eval.penalizedCost != readCost)throw std::string("Input solution has a different cost than announced in the file");
-		if (params.verbose) hgs_log_stream() << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
+		if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
 	}
 	else 
 		throw std::string("Impossible to open solution file provided in input in : " + fileName);
