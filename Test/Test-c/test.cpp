@@ -42,8 +42,7 @@ static TestSolution solve(
     const Individual* best = solver.population.getBestFound();
     assert(best != nullptr);
     result.cost = best->eval.penalizedCost;
-    result.time = std::chrono::duration<double>(
-        std::chrono::steady_clock::now() - params.startTime).count();
+    result.time = params.elapsedSeconds();
     for (const auto& route : best->chromR) {
         if (!route.empty()) {
             result.routes.push_back(route);

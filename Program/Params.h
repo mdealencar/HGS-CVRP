@@ -39,10 +39,9 @@ SOFTWARE.*/
 #include <unordered_set>
 #include <random>
 #include <ostream>
+#include "ThreadCpuTimer.h"
 #define MY_EPSILON 0.00001 // Precision parameter, used to avoid numerical instabilities
 #define PI 3.14159265359
-
-#include <chrono>
 
 struct Client
 {
@@ -67,7 +66,7 @@ public:
 	double penaltyDuration;				// Penalty for one unit of duration excess (adapted through the search)
 
 	/* START TIME OF THE ALGORITHM */
-	std::chrono::time_point<std::chrono::steady_clock> startTime; // Start time of the optimization (set when Params is constructed)
+	ThreadCpuTimer::TimePoint startTime; // Start CPU time of the optimization (current thread)
 
 	/* RANDOM NUMBER GENERATOR */       
 	std::minstd_rand ran;               // Using the fastest and simplest LCG. The quality of random numbers is not critical for the LS, but speed is
@@ -99,6 +98,7 @@ public:
 		bool verbose,
 		const AlgorithmParameters& ap,
 		std::ostream& logStream = std::cout);
+
+	double elapsedSeconds() const;
 };
 #endif
-

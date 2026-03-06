@@ -16,7 +16,7 @@ Solution *prepare_solution(Population &population, Params &params)
 {
 	// Preparing the best solution
 	Solution *sol = new Solution;
-	sol->time = std::chrono::duration<double>(std::chrono::steady_clock::now() - params.startTime).count();
+	sol->time = params.elapsedSeconds();
 
 	if (population.getBestFound() != nullptr) {
 		// Best individual

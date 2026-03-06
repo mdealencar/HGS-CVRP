@@ -21,7 +21,7 @@ Params::Params(
 	  vehicleCapacity(vehicleCapacity), timeCost(dist_mtx), verbose(verbose), logStream(logStream)
 {
 	// This marks the starting time of the algorithm
-	startTime = std::chrono::steady_clock::now();
+	startTime = ThreadCpuTimer::now();
 
 	nbClients = (int)demands.size() - 1; // Need to substract the depot from the number of nodes
 	totalDemand = 0.;
@@ -121,4 +121,8 @@ Params::Params(
 		logStream << "----- INSTANCE SUCCESSFULLY LOADED WITH " << nbClients << " CLIENTS AND " << nbVehicles << " VEHICLES" << std::endl;
 }
 
+double Params::elapsedSeconds() const
+{
+	return ThreadCpuTimer::elapsedSeconds(startTime);
+}
 

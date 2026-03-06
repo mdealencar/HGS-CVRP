@@ -5,7 +5,7 @@
 void Population::generatePopulation()
 {
 	if (params.verbose) params.logStream << "----- BUILDING INITIAL POPULATION" << std::endl;
-	for (int i = 0; i < 4*params.ap.mu && (i == 0 || params.ap.timeLimit == 0 || std::chrono::duration<double>(std::chrono::steady_clock::now() - params.startTime).count() < params.ap.timeLimit) ; i++)
+	for (int i = 0; i < 4*params.ap.mu && (i == 0 || params.ap.timeLimit == 0 || params.elapsedSeconds() < params.ap.timeLimit) ; i++)
 	{
 		Individual randomIndiv(params);
 		split.generalSplit(randomIndiv, params.nbVehicles);
@@ -58,7 +58,7 @@ bool Population::addIndividual(const Individual & indiv, bool updateFeasible)
 		if (indiv.eval.penalizedCost < bestSolutionOverall.eval.penalizedCost - MY_EPSILON)
 		{
 			bestSolutionOverall = indiv;
-			searchProgress.push_back({ std::chrono::duration<double>(std::chrono::steady_clock::now() - params.startTime).count() , bestSolutionOverall.eval.penalizedCost });
+			searchProgress.push_back({ params.elapsedSeconds() , bestSolutionOverall.eval.penalizedCost });
 		}
 		return true;
 	}
@@ -217,7 +217,7 @@ void Population::printState(int nbIter, int nbIterNoImprovement)
 		trace << "It " << std::setw(6) << nbIter
 			<< " " << std::setw(6) << nbIterNoImprovement
 			<< " | T(s) " << std::fixed << std::setprecision(2)
-			<< std::chrono::duration<double>(std::chrono::steady_clock::now() - params.startTime).count();
+			<< params.elapsedSeconds();
 
 		if (getBestFeasible() != NULL) trace << " | Feas " << feasibleSubpop.size() << " " << getBestFeasible()->eval.penalizedCost << " " << getAverageCost(feasibleSubpop);
 		else trace << " | NO-FEASIBLE";
