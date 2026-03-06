@@ -69,7 +69,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
                                         -P ${PROJECT_SOURCE_DIR}/Test/TestExecutable.cmake)
 
     # Test Library (C++ interface)
-    add_subdirectory(Test/Test-c/)
+    add_subdirectory(Test/Test-cpp/)
     add_test(NAME       lib_test_cpp
              COMMAND    lib_test_cpp)
 

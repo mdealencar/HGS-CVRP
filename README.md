@@ -141,21 +141,11 @@ make lib
 This will generate the library file, `libhgscvrp.so` (Linux), `libhgscvrp.dylib` (macOS), or `hgscvrp.dll` (Windows),
 in the `build` directory.
 
-To test calling the shared library from a C code:
+To test calling the shared library from a C++ code:
 ```console
-make lib_test_c
+make lib_test_cpp
 ctest -R lib --verbose
 ```
-
-### Redirecting library logs (useful for Python bindings)
-
-When the solver is called through the shared library, logs can be redirected with the C API:
-
-- `hgs_set_output_stdout()` (default)
-- `hgs_set_output_stderr()`
-- `hgs_set_output_file(const char* filePath)`
-
-This makes it easy to capture solver output from Python bindings by sending logs to a file or `stderr`.
 
 ## Contributing
 
