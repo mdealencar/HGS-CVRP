@@ -11,9 +11,9 @@ void Split::generalSplit(Individual & indiv, int nbMaxVehicles)
 	{
 		cliSplit[i].demand = params.cli[indiv.chromT[i - 1]].demand;
 		cliSplit[i].serviceTime = params.cli[indiv.chromT[i - 1]].serviceDuration;
-		cliSplit[i].d0_x = params.timeCost[0][indiv.chromT[i - 1]];
-		cliSplit[i].dx_0 = params.timeCost[indiv.chromT[i - 1]][0];
-		if (i < params.nbClients) cliSplit[i].dnext = params.timeCost[indiv.chromT[i - 1]][indiv.chromT[i]];
+		cliSplit[i].d0_x = params.timeCost(0, indiv.chromT[i - 1]);
+		cliSplit[i].dx_0 = params.timeCost(indiv.chromT[i - 1], 0);
+		if (i < params.nbClients) cliSplit[i].dnext = params.timeCost(indiv.chromT[i - 1], indiv.chromT[i]);
 		else cliSplit[i].dnext = -1.e30;
 		sumLoad[i] = sumLoad[i - 1] + cliSplit[i].demand;
 		sumService[i] = sumService[i - 1] + cliSplit[i].serviceTime;

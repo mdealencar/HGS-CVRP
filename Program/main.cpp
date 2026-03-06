@@ -19,8 +19,17 @@ int main(int argc, char *argv[])
 		if (commandline.verbose) std::cout << "----- READING INSTANCE: " << commandline.pathInstance << std::endl;
 		InstanceCVRPLIB cvrp(commandline.pathInstance, commandline.isRoundingInteger);
 
-		Params params(cvrp.x_coords,cvrp.y_coords,cvrp.dist_mtx,cvrp.service_time,cvrp.demands,
-			          cvrp.vehicleCapacity,cvrp.durationLimit,commandline.nbVeh,cvrp.isDurationConstraint,commandline.verbose,commandline.ap);
+		// Flatten the distance matrix for the new Params interface
+		int nbNodes = (int)cvrp.demands.size();
+		std::vector<double> flat_dist(nbNodes * nbNodes);
+		for (int i = 0; i < nbNodes; i++)
+			for (int j = 0; j < nbNodes; j++)
+				flat_dist[i * nbNodes + j] = cvrp.dist_mtx[i][j];
+
+		Params params(cvrp.x_coords.data(), cvrp.y_coords.data(), flat_dist.data(),
+			          cvrp.service_time.data(), cvrp.demands.data(), nbNodes,
+			          cvrp.vehicleCapacity, cvrp.durationLimit, commandline.nbVeh,
+			          cvrp.isDurationConstraint, commandline.verbose, commandline.ap);
 
 		// Running HGS
 		Genetic solver(params);

@@ -17,6 +17,16 @@ struct TestSolution {
     std::vector<std::vector<int>> routes;
 };
 
+// Flatten a vector-of-vectors distance matrix into a contiguous buffer
+static std::vector<double> flatten(const std::vector<std::vector<double>>& mtx) {
+    int n = static_cast<int>(mtx.size());
+    std::vector<double> flat(n * n);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            flat[i * n + j] = mtx[i][j];
+    return flat;
+}
+
 // Run HGS and extract the best solution
 static TestSolution solve(
     const std::vector<double>& x_coords,
@@ -32,8 +42,12 @@ static TestSolution solve(
     const AlgorithmParameters& ap,
     std::ostream& logStream)
 {
-    Params params(x_coords, y_coords, dist_mtx, service_time, demands,
-                  vehicleCapacity, durationLimit, nbVeh,
+    int nbNodes = static_cast<int>(demands.size());
+    auto flat_dist = flatten(dist_mtx);
+    const double* xp = x_coords.empty() ? nullptr : x_coords.data();
+    const double* yp = y_coords.empty() ? nullptr : y_coords.data();
+    Params params(xp, yp, flat_dist.data(), service_time.data(), demands.data(),
+                  nbNodes, vehicleCapacity, durationLimit, nbVeh,
                   isDurationConstraint, verbose, ap, logStream);
     Genetic solver(params);
     solver.run();

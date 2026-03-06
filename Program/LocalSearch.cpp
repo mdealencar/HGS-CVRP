@@ -126,8 +126,8 @@ void LocalSearch::setLocalVariablesRouteV()
 
 bool LocalSearch::move1()
 {
-	double costSuppU = params.timeCost[nodeUPrevIndex][nodeXIndex] - params.timeCost[nodeUPrevIndex][nodeUIndex] - params.timeCost[nodeUIndex][nodeXIndex];
-	double costSuppV = params.timeCost[nodeVIndex][nodeUIndex] + params.timeCost[nodeUIndex][nodeYIndex] - params.timeCost[nodeVIndex][nodeYIndex];
+	double costSuppU = params.timeCost(nodeUPrevIndex, nodeXIndex) - params.timeCost(nodeUPrevIndex, nodeUIndex) - params.timeCost(nodeUIndex, nodeXIndex);
+	double costSuppV = params.timeCost(nodeVIndex, nodeUIndex) + params.timeCost(nodeUIndex, nodeYIndex) - params.timeCost(nodeVIndex, nodeYIndex);
 
 	if (!intraRouteMove)
 	{
@@ -156,19 +156,19 @@ bool LocalSearch::move1()
 
 bool LocalSearch::move2()
 {
-	double costSuppU = params.timeCost[nodeUPrevIndex][nodeXNextIndex] - params.timeCost[nodeUPrevIndex][nodeUIndex] - params.timeCost[nodeXIndex][nodeXNextIndex];
-	double costSuppV = params.timeCost[nodeVIndex][nodeUIndex] + params.timeCost[nodeXIndex][nodeYIndex] - params.timeCost[nodeVIndex][nodeYIndex];
+	double costSuppU = params.timeCost(nodeUPrevIndex, nodeXNextIndex) - params.timeCost(nodeUPrevIndex, nodeUIndex) - params.timeCost(nodeXIndex, nodeXNextIndex);
+	double costSuppV = params.timeCost(nodeVIndex, nodeUIndex) + params.timeCost(nodeXIndex, nodeYIndex) - params.timeCost(nodeVIndex, nodeYIndex);
 
 	if (!intraRouteMove)
 	{
 		// Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
 		if (costSuppU + costSuppV >= routeU->penalty + routeV->penalty) return false;
 
-		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params.timeCost[nodeUIndex][nodeXIndex] - serviceU - serviceX)
+		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params.timeCost(nodeUIndex, nodeXIndex) - serviceU - serviceX)
 			+ penaltyExcessLoad(routeU->load - loadU - loadX)
 			- routeU->penalty;
 
-		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params.timeCost[nodeUIndex][nodeXIndex] + serviceU + serviceX)
+		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params.timeCost(nodeUIndex, nodeXIndex) + serviceU + serviceX)
 			+ penaltyExcessLoad(routeV->load + loadU + loadX)
 			- routeV->penalty;
 	}
@@ -187,8 +187,8 @@ bool LocalSearch::move2()
 
 bool LocalSearch::move3()
 {
-	double costSuppU = params.timeCost[nodeUPrevIndex][nodeXNextIndex] - params.timeCost[nodeUPrevIndex][nodeUIndex] - params.timeCost[nodeUIndex][nodeXIndex] - params.timeCost[nodeXIndex][nodeXNextIndex];
-	double costSuppV = params.timeCost[nodeVIndex][nodeXIndex] + params.timeCost[nodeXIndex][nodeUIndex] + params.timeCost[nodeUIndex][nodeYIndex] - params.timeCost[nodeVIndex][nodeYIndex];
+	double costSuppU = params.timeCost(nodeUPrevIndex, nodeXNextIndex) - params.timeCost(nodeUPrevIndex, nodeUIndex) - params.timeCost(nodeUIndex, nodeXIndex) - params.timeCost(nodeXIndex, nodeXNextIndex);
+	double costSuppV = params.timeCost(nodeVIndex, nodeXIndex) + params.timeCost(nodeXIndex, nodeUIndex) + params.timeCost(nodeUIndex, nodeYIndex) - params.timeCost(nodeVIndex, nodeYIndex);
 
 	if (!intraRouteMove)
 	{
@@ -218,8 +218,8 @@ bool LocalSearch::move3()
 
 bool LocalSearch::move4()
 {
-	double costSuppU = params.timeCost[nodeUPrevIndex][nodeVIndex] + params.timeCost[nodeVIndex][nodeXIndex] - params.timeCost[nodeUPrevIndex][nodeUIndex] - params.timeCost[nodeUIndex][nodeXIndex];
-	double costSuppV = params.timeCost[nodeVPrevIndex][nodeUIndex] + params.timeCost[nodeUIndex][nodeYIndex] - params.timeCost[nodeVPrevIndex][nodeVIndex] - params.timeCost[nodeVIndex][nodeYIndex];
+	double costSuppU = params.timeCost(nodeUPrevIndex, nodeVIndex) + params.timeCost(nodeVIndex, nodeXIndex) - params.timeCost(nodeUPrevIndex, nodeUIndex) - params.timeCost(nodeUIndex, nodeXIndex);
+	double costSuppV = params.timeCost(nodeVPrevIndex, nodeUIndex) + params.timeCost(nodeUIndex, nodeYIndex) - params.timeCost(nodeVPrevIndex, nodeVIndex) - params.timeCost(nodeVIndex, nodeYIndex);
 
 	if (!intraRouteMove)
 	{
@@ -248,19 +248,19 @@ bool LocalSearch::move4()
 
 bool LocalSearch::move5()
 {
-	double costSuppU = params.timeCost[nodeUPrevIndex][nodeVIndex] + params.timeCost[nodeVIndex][nodeXNextIndex] - params.timeCost[nodeUPrevIndex][nodeUIndex] - params.timeCost[nodeXIndex][nodeXNextIndex];
-	double costSuppV = params.timeCost[nodeVPrevIndex][nodeUIndex] + params.timeCost[nodeXIndex][nodeYIndex] - params.timeCost[nodeVPrevIndex][nodeVIndex] - params.timeCost[nodeVIndex][nodeYIndex];
+	double costSuppU = params.timeCost(nodeUPrevIndex, nodeVIndex) + params.timeCost(nodeVIndex, nodeXNextIndex) - params.timeCost(nodeUPrevIndex, nodeUIndex) - params.timeCost(nodeXIndex, nodeXNextIndex);
+	double costSuppV = params.timeCost(nodeVPrevIndex, nodeUIndex) + params.timeCost(nodeXIndex, nodeYIndex) - params.timeCost(nodeVPrevIndex, nodeVIndex) - params.timeCost(nodeVIndex, nodeYIndex);
 
 	if (!intraRouteMove)
 	{
 		// Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
 		if (costSuppU + costSuppV >= routeU->penalty + routeV->penalty) return false;
 
-		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params.timeCost[nodeUIndex][nodeXIndex] + serviceV - serviceU - serviceX)
+		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params.timeCost(nodeUIndex, nodeXIndex) + serviceV - serviceU - serviceX)
 			+ penaltyExcessLoad(routeU->load + loadV - loadU - loadX)
 			- routeU->penalty;
 
-		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params.timeCost[nodeUIndex][nodeXIndex] - serviceV + serviceU + serviceX)
+		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params.timeCost(nodeUIndex, nodeXIndex) - serviceV + serviceU + serviceX)
 			+ penaltyExcessLoad(routeV->load + loadU + loadX - loadV)
 			- routeV->penalty;
 	}
@@ -279,19 +279,19 @@ bool LocalSearch::move5()
 
 bool LocalSearch::move6()
 {
-	double costSuppU = params.timeCost[nodeUPrevIndex][nodeVIndex] + params.timeCost[nodeYIndex][nodeXNextIndex] - params.timeCost[nodeUPrevIndex][nodeUIndex] - params.timeCost[nodeXIndex][nodeXNextIndex];
-	double costSuppV = params.timeCost[nodeVPrevIndex][nodeUIndex] + params.timeCost[nodeXIndex][nodeYNextIndex] - params.timeCost[nodeVPrevIndex][nodeVIndex] - params.timeCost[nodeYIndex][nodeYNextIndex];
+	double costSuppU = params.timeCost(nodeUPrevIndex, nodeVIndex) + params.timeCost(nodeYIndex, nodeXNextIndex) - params.timeCost(nodeUPrevIndex, nodeUIndex) - params.timeCost(nodeXIndex, nodeXNextIndex);
+	double costSuppV = params.timeCost(nodeVPrevIndex, nodeUIndex) + params.timeCost(nodeXIndex, nodeYNextIndex) - params.timeCost(nodeVPrevIndex, nodeVIndex) - params.timeCost(nodeYIndex, nodeYNextIndex);
 
 	if (!intraRouteMove)
 	{
 		// Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
 		if (costSuppU + costSuppV >= routeU->penalty + routeV->penalty) return false;
 
-		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params.timeCost[nodeUIndex][nodeXIndex] + params.timeCost[nodeVIndex][nodeYIndex] + serviceV + serviceY - serviceU - serviceX)
+		costSuppU += penaltyExcessDuration(routeU->duration + costSuppU - params.timeCost(nodeUIndex, nodeXIndex) + params.timeCost(nodeVIndex, nodeYIndex) + serviceV + serviceY - serviceU - serviceX)
 			+ penaltyExcessLoad(routeU->load + loadV + loadY - loadU - loadX)
 			- routeU->penalty;
 
-		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params.timeCost[nodeUIndex][nodeXIndex] - params.timeCost[nodeVIndex][nodeYIndex] - serviceV - serviceY + serviceU + serviceX)
+		costSuppV += penaltyExcessDuration(routeV->duration + costSuppV + params.timeCost(nodeUIndex, nodeXIndex) - params.timeCost(nodeVIndex, nodeYIndex) - serviceV - serviceY + serviceU + serviceX)
 			+ penaltyExcessLoad(routeV->load + loadU + loadX - loadV - loadY)
 			- routeV->penalty;
 	}
@@ -312,7 +312,7 @@ bool LocalSearch::move7()
 {
 	if (nodeU->position > nodeV->position) return false;
 
-	double cost = params.timeCost[nodeUIndex][nodeVIndex] + params.timeCost[nodeXIndex][nodeYIndex] - params.timeCost[nodeUIndex][nodeXIndex] - params.timeCost[nodeVIndex][nodeYIndex] + nodeV->cumulatedReversalDistance - nodeX->cumulatedReversalDistance;
+	double cost = params.timeCost(nodeUIndex, nodeVIndex) + params.timeCost(nodeXIndex, nodeYIndex) - params.timeCost(nodeUIndex, nodeXIndex) - params.timeCost(nodeVIndex, nodeYIndex) + nodeV->cumulatedReversalDistance - nodeX->cumulatedReversalDistance;
 
 	if (cost > -MY_EPSILON) return false;
 	if (nodeU->next == nodeV) return false;
@@ -342,15 +342,15 @@ bool LocalSearch::move7()
 
 bool LocalSearch::move8()
 {
-	double cost = params.timeCost[nodeUIndex][nodeVIndex] + params.timeCost[nodeXIndex][nodeYIndex] - params.timeCost[nodeUIndex][nodeXIndex] - params.timeCost[nodeVIndex][nodeYIndex]
+	double cost = params.timeCost(nodeUIndex, nodeVIndex) + params.timeCost(nodeXIndex, nodeYIndex) - params.timeCost(nodeUIndex, nodeXIndex) - params.timeCost(nodeVIndex, nodeYIndex)
 		+ nodeV->cumulatedReversalDistance + routeU->reversalDistance - nodeX->cumulatedReversalDistance
 		- routeU->penalty - routeV->penalty;
 
 	// Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
 	if (cost >= 0) return false;
 		
-	cost += penaltyExcessDuration(nodeU->cumulatedTime + nodeV->cumulatedTime + nodeV->cumulatedReversalDistance + params.timeCost[nodeUIndex][nodeVIndex])
-		+ penaltyExcessDuration(routeU->duration - nodeU->cumulatedTime - params.timeCost[nodeUIndex][nodeXIndex] + routeU->reversalDistance - nodeX->cumulatedReversalDistance + routeV->duration - nodeV->cumulatedTime - params.timeCost[nodeVIndex][nodeYIndex] + params.timeCost[nodeXIndex][nodeYIndex])
+	cost += penaltyExcessDuration(nodeU->cumulatedTime + nodeV->cumulatedTime + nodeV->cumulatedReversalDistance + params.timeCost(nodeUIndex, nodeVIndex))
+		+ penaltyExcessDuration(routeU->duration - nodeU->cumulatedTime - params.timeCost(nodeUIndex, nodeXIndex) + routeU->reversalDistance - nodeX->cumulatedReversalDistance + routeV->duration - nodeV->cumulatedTime - params.timeCost(nodeVIndex, nodeYIndex) + params.timeCost(nodeXIndex, nodeYIndex))
 		+ penaltyExcessLoad(nodeU->cumulatedLoad + nodeV->cumulatedLoad)
 		+ penaltyExcessLoad(routeU->load + routeV->load - nodeU->cumulatedLoad - nodeV->cumulatedLoad);
 		
@@ -422,14 +422,14 @@ bool LocalSearch::move8()
 
 bool LocalSearch::move9()
 {
-	double cost = params.timeCost[nodeUIndex][nodeYIndex] + params.timeCost[nodeVIndex][nodeXIndex] - params.timeCost[nodeUIndex][nodeXIndex] - params.timeCost[nodeVIndex][nodeYIndex]
+	double cost = params.timeCost(nodeUIndex, nodeYIndex) + params.timeCost(nodeVIndex, nodeXIndex) - params.timeCost(nodeUIndex, nodeXIndex) - params.timeCost(nodeVIndex, nodeYIndex)
 		        - routeU->penalty - routeV->penalty;
 
 	// Early move pruning to save CPU time. Guarantees that this move cannot improve without checking additional (load, duration...) constraints
 	if (cost >= 0) return false;
 		
-	cost += penaltyExcessDuration(nodeU->cumulatedTime + routeV->duration - nodeV->cumulatedTime - params.timeCost[nodeVIndex][nodeYIndex] + params.timeCost[nodeUIndex][nodeYIndex])
-		+ penaltyExcessDuration(routeU->duration - nodeU->cumulatedTime - params.timeCost[nodeUIndex][nodeXIndex] + nodeV->cumulatedTime + params.timeCost[nodeVIndex][nodeXIndex])
+	cost += penaltyExcessDuration(nodeU->cumulatedTime + routeV->duration - nodeV->cumulatedTime - params.timeCost(nodeVIndex, nodeYIndex) + params.timeCost(nodeUIndex, nodeYIndex))
+		+ penaltyExcessDuration(routeU->duration - nodeU->cumulatedTime - params.timeCost(nodeUIndex, nodeXIndex) + nodeV->cumulatedTime + params.timeCost(nodeVIndex, nodeXIndex))
 		+ penaltyExcessLoad(nodeU->cumulatedLoad + routeV->load - nodeV->cumulatedLoad)
 		+ penaltyExcessLoad(nodeV->cumulatedLoad + routeU->load - nodeU->cumulatedLoad);
 
@@ -529,7 +529,7 @@ bool LocalSearch::swapStar()
 		SwapStarElement mySwapStar;
 		mySwapStar.U = nodeU;
 		mySwapStar.bestPositionU = bestInsertClient[routeV->cour][nodeU->cour].bestLocation[0];
-		double deltaDistRouteU = params.timeCost[nodeU->prev->cour][nodeU->next->cour] - params.timeCost[nodeU->prev->cour][nodeU->cour] - params.timeCost[nodeU->cour][nodeU->next->cour];
+		double deltaDistRouteU = params.timeCost(nodeU->prev->cour, nodeU->next->cour) - params.timeCost(nodeU->prev->cour, nodeU->cour) - params.timeCost(nodeU->cour, nodeU->next->cour);
 		double deltaDistRouteV = bestInsertClient[routeV->cour][nodeU->cour].bestCost[0];
 		mySwapStar.moveCost = deltaDistRouteU + deltaDistRouteV
 			+ penaltyExcessLoad(routeU->load - params.cli[nodeU->cour].demand) - routeU->penalty
@@ -548,7 +548,7 @@ bool LocalSearch::swapStar()
 		mySwapStar.V = nodeV;
 		mySwapStar.bestPositionV = bestInsertClient[routeU->cour][nodeV->cour].bestLocation[0];
 		double deltaDistRouteU = bestInsertClient[routeU->cour][nodeV->cour].bestCost[0];
-		double deltaDistRouteV = params.timeCost[nodeV->prev->cour][nodeV->next->cour] - params.timeCost[nodeV->prev->cour][nodeV->cour] - params.timeCost[nodeV->cour][nodeV->next->cour];
+		double deltaDistRouteV = params.timeCost(nodeV->prev->cour, nodeV->next->cour) - params.timeCost(nodeV->prev->cour, nodeV->cour) - params.timeCost(nodeV->cour, nodeV->next->cour);
 		mySwapStar.moveCost = deltaDistRouteU + deltaDistRouteV
 			+ penaltyExcessLoad(routeU->load + params.cli[nodeV->cour].demand) - routeU->penalty
 			+ penaltyExcessLoad(routeV->load - params.cli[nodeV->cour].demand) - routeV->penalty
@@ -594,7 +594,7 @@ double LocalSearch::getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& b
 	}
 
 	// Compute insertion in the place of V
-	double deltaCost = params.timeCost[V->prev->cour][U->cour] + params.timeCost[U->cour][V->next->cour] - params.timeCost[V->prev->cour][V->next->cour];
+	double deltaCost = params.timeCost(V->prev->cour, U->cour) + params.timeCost(U->cour, V->next->cour) - params.timeCost(V->prev->cour, V->next->cour);
 	if (!found || deltaCost < bestCost)
 	{
 		bestPosition = V->prev;
@@ -609,16 +609,16 @@ void LocalSearch::preprocessInsertions(Route * R1, Route * R2)
 	for (Node * U = R1->depot->next; !U->isDepot; U = U->next)
 	{
 		// Performs the preprocessing
-		U->deltaRemoval = params.timeCost[U->prev->cour][U->next->cour] - params.timeCost[U->prev->cour][U->cour] - params.timeCost[U->cour][U->next->cour];
+		U->deltaRemoval = params.timeCost(U->prev->cour, U->next->cour) - params.timeCost(U->prev->cour, U->cour) - params.timeCost(U->cour, U->next->cour);
 		if (R2->whenLastModified > bestInsertClient[R2->cour][U->cour].whenLastCalculated)
 		{
 			bestInsertClient[R2->cour][U->cour].reset();
 			bestInsertClient[R2->cour][U->cour].whenLastCalculated = nbMoves;
-			bestInsertClient[R2->cour][U->cour].bestCost[0] = params.timeCost[0][U->cour] + params.timeCost[U->cour][R2->depot->next->cour] - params.timeCost[0][R2->depot->next->cour];
+			bestInsertClient[R2->cour][U->cour].bestCost[0] = params.timeCost(0, U->cour) + params.timeCost(U->cour, R2->depot->next->cour) - params.timeCost(0, R2->depot->next->cour);
 			bestInsertClient[R2->cour][U->cour].bestLocation[0] = R2->depot;
 			for (Node * V = R2->depot->next; !V->isDepot; V = V->next)
 			{
-				double deltaCost = params.timeCost[V->cour][U->cour] + params.timeCost[U->cour][V->next->cour] - params.timeCost[V->cour][V->next->cour];
+				double deltaCost = params.timeCost(V->cour, U->cour) + params.timeCost(U->cour, V->next->cour) - params.timeCost(V->cour, V->next->cour);
 				bestInsertClient[R2->cour][U->cour].compareAndAdd(deltaCost, V);
 			}
 		}
@@ -681,8 +681,8 @@ void LocalSearch::updateRouteData(Route * myRoute)
 		myplace++;
 		mynode->position = myplace;
 		myload += params.cli[mynode->cour].demand;
-		mytime += params.timeCost[mynode->prev->cour][mynode->cour] + params.cli[mynode->cour].serviceDuration;
-		myReversalDistance += params.timeCost[mynode->cour][mynode->prev->cour] - params.timeCost[mynode->prev->cour][mynode->cour] ;
+		mytime += params.timeCost(mynode->prev->cour, mynode->cour) + params.cli[mynode->cour].serviceDuration;
+		myReversalDistance += params.timeCost(mynode->cour, mynode->prev->cour) - params.timeCost(mynode->prev->cour, mynode->cour) ;
 		mynode->cumulatedLoad = myload;
 		mynode->cumulatedTime = mytime;
 		mynode->cumulatedReversalDistance = myReversalDistance;

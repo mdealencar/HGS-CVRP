@@ -81,16 +81,17 @@ public:
 	double maxDemand;										// Maximum demand of a client
 	double maxDist;											// Maximum distance between two clients
 	std::vector< Client > cli ;								// Vector containing information on each client
-	const std::vector< std::vector< double > >& timeCost;	// Distance matrix
+	inline double timeCost(int i, int j) const { return timeCost_[i * timeCostN_ + j]; }
 	std::vector< std::vector< int > > correlatedVertices;	// Neighborhood restrictions: For each client, list of nearby customers
 	bool areCoordinatesProvided;                            // Check if valid coordinates are provided
 
 	// Initialization from a given data set
-	Params(const std::vector<double>& x_coords,
-		const std::vector<double>& y_coords,
-		const std::vector<std::vector<double>>& dist_mtx,
-		const std::vector<double>& service_time,
-		const std::vector<double>& demands,
+	Params(const double* x_coords,
+		const double* y_coords,
+		const double* dist_mtx,
+		const double* service_time,
+		const double* demands,
+		int nbNodes,
 		double vehicleCapacity,
 		double durationLimit,
 		int nbVeh,
@@ -100,5 +101,9 @@ public:
 		std::ostream& logStream = std::cout);
 
 	double elapsedSeconds() const;
+
+private:
+	const double* timeCost_;
+	int timeCostN_;
 };
 #endif
