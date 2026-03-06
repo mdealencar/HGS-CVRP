@@ -83,9 +83,14 @@ public:
 	std::vector< Client > cli ;								// Vector containing information on each client
 	inline double timeCost(int i, int j) const { return timeCost_[i * timeCostN_ + j]; }
 	std::vector< std::vector< int > > correlatedVertices;	// Neighborhood restrictions: For each client, list of nearby customers
-	bool areCoordinatesProvided;                            // Check if valid coordinates are provided
+	bool areCoordinatesProvided;                            // True when both coordinate pointers are non-null
 
-	// Initialization from a given data set
+	// Initialization from a given data set.
+	// Contract:
+	// - dist_mtx must point to a flat row-major nbNodes x nbNodes matrix.
+	// - service_time and demands must each contain at least nbNodes values.
+	// - If x_coords and y_coords are non-null, each must contain at least nbNodes values.
+	// - To indicate "coordinates not provided" (and thus disable coordinate-based SWAP*), pass nullptr for both.
 	Params(const double* x_coords,
 		const double* y_coords,
 		const double* dist_mtx,

@@ -28,13 +28,14 @@ Params::Params(
 	// Initialize RNG
 	ran.seed(ap.seed);
 
-	// check if valid coordinates are provided
+	// Coordinates are considered provided when both pointers are non-null.
+	// In that case, callers must provide at least nbNodes values in each array.
 	areCoordinatesProvided = (x_coords != nullptr && y_coords != nullptr);
 
 	cli = std::vector<Client>(nbClients + 1);
 	for (int i = 0; i <= nbClients; i++)
 	{
-		// If useSwapStar==false, x_coords and y_coords may be empty.
+		// To disable coordinates/SWAP* in this API, pass nullptr for both coordinate pointers.
 		if (ap.useSwapStar == 1 && areCoordinatesProvided)
 		{
 			cli[i].coordX = x_coords[i];

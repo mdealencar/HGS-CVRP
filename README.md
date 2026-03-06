@@ -145,6 +145,14 @@ make lib_test_cpp
 ctest -R lib --verbose
 ```
 
+### C++ API input contract (`Params`)
+
+When constructing `Params` directly:
+- `dist_mtx` must point to a flat row-major matrix of size `nbNodes * nbNodes`
+- `service_time` and `demands` must each contain at least `nbNodes` values
+- if `x_coords` and `y_coords` are non-null, each must contain at least `nbNodes` values
+- to indicate that coordinates are not provided (and disable coordinate-based SWAP*), pass `nullptr` for both `x_coords` and `y_coords`
+
 ## License
 
 [![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
