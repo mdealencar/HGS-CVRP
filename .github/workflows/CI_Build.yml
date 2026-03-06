@@ -48,10 +48,10 @@ jobs:
         cd build
         if [ "$RUNNER_OS" == "Windows" ]; then
           cmake .. -DCMAKE_BUILD_TYPE=Debug -G "NMake Makefiles"
-          nmake lib_test_c
+          nmake lib_test_cpp
         else
           cmake .. -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles"
-          make lib_test_c
+          make lib_test_cpp
         fi  
         ctest -R lib --verbose
       shell: bash

@@ -38,6 +38,8 @@ SOFTWARE.*/
 #include <algorithm>
 #include <unordered_set>
 #include <random>
+#include <ostream>
+#include "ThreadCpuTimer.h"
 #define MY_EPSILON 0.00001 // Precision parameter, used to avoid numerical instabilities
 #define PI 3.14159265359
 
@@ -57,13 +59,14 @@ public:
 	/* PARAMETERS OF THE GENETIC ALGORITHM */
 	bool verbose;                       // Controls verbose level through the iterations
 	AlgorithmParameters ap;	            // Main parameters of the HGS algorithm
+	std::ostream& logStream;            // Per-instance log output stream
 
 	/* ADAPTIVE PENALTY COEFFICIENTS */
 	double penaltyCapacity;				// Penalty for one unit of capacity excess (adapted through the search)
 	double penaltyDuration;				// Penalty for one unit of duration excess (adapted through the search)
 
 	/* START TIME OF THE ALGORITHM */
-	clock_t startTime;                  // Start time of the optimization (set when Params is constructed)
+	ThreadCpuTimer::TimePoint startTime; // Start CPU time of the optimization (current thread)
 
 	/* RANDOM NUMBER GENERATOR */       
 	std::minstd_rand ran;               // Using the fastest and simplest LCG. The quality of random numbers is not critical for the LS, but speed is
@@ -78,22 +81,34 @@ public:
 	double maxDemand;										// Maximum demand of a client
 	double maxDist;											// Maximum distance between two clients
 	std::vector< Client > cli ;								// Vector containing information on each client
-	const std::vector< std::vector< double > >& timeCost;	// Distance matrix
+	inline double timeCost(int i, int j) const { return timeCost_[i * timeCostN_ + j]; }
 	std::vector< std::vector< int > > correlatedVertices;	// Neighborhood restrictions: For each client, list of nearby customers
-	bool areCoordinatesProvided;                            // Check if valid coordinates are provided
+	bool areCoordinatesProvided;                            // True when both coordinate pointers are non-null
 
-	// Initialization from a given data set
-	Params(const std::vector<double>& x_coords,
-		const std::vector<double>& y_coords,
-		const std::vector<std::vector<double>>& dist_mtx,
-		const std::vector<double>& service_time,
-		const std::vector<double>& demands,
+	// Initialization from a given data set.
+	// Contract:
+	// - dist_mtx must point to a flat row-major nbNodes x nbNodes matrix.
+	// - service_time and demands must each contain at least nbNodes values.
+	// - If x_coords and y_coords are non-null, each must contain at least nbNodes values.
+	// - To indicate "coordinates not provided" (and thus disable coordinate-based SWAP*), pass nullptr for both.
+	Params(const double* x_coords,
+		const double* y_coords,
+		const double* dist_mtx,
+		const double* service_time,
+		const double* demands,
+		int nbNodes,
 		double vehicleCapacity,
 		double durationLimit,
 		int nbVeh,
 		bool isDurationConstraint,
 		bool verbose,
-		const AlgorithmParameters& ap);
+		const AlgorithmParameters& ap,
+		std::ostream& logStream = std::cout);
+
+	double elapsedSeconds() const;
+
+private:
+	const double* timeCost_;
+	int timeCostN_;
 };
 #endif
-

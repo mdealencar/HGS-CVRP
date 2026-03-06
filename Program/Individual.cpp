@@ -1,5 +1,4 @@
-#include "Individual.h" 
-#include "Logger.h"
+#include "Individual.h"
 
 void Individual::evaluateCompleteCost(const Params & params)
 {
@@ -8,20 +7,20 @@ void Individual::evaluateCompleteCost(const Params & params)
 	{
 		if (!chromR[r].empty())
 		{
-			double distance = params.timeCost[0][chromR[r][0]];
+			double distance = params.timeCost(0, chromR[r][0]);
 			double load = params.cli[chromR[r][0]].demand;
 			double service = params.cli[chromR[r][0]].serviceDuration;
 			predecessors[chromR[r][0]] = 0;
 			for (int i = 1; i < (int)chromR[r].size(); i++)
 			{
-				distance += params.timeCost[chromR[r][i-1]][chromR[r][i]];
+				distance += params.timeCost(chromR[r][i-1], chromR[r][i]);
 				load += params.cli[chromR[r][i]].demand;
 				service += params.cli[chromR[r][i]].serviceDuration;
 				predecessors[chromR[r][i]] = chromR[r][i-1];
 				successors[chromR[r][i-1]] = chromR[r][i];
 			}
 			successors[chromR[r][chromR[r].size()-1]] = 0;
-			distance += params.timeCost[chromR[r][chromR[r].size()-1]][0];
+			distance += params.timeCost(chromR[r][chromR[r].size()-1], 0);
 			eval.distance += distance;
 			eval.nbRoutes++;
 			if (load > params.vehicleCapacity) eval.capacityExcess += load - params.vehicleCapacity;
@@ -75,7 +74,7 @@ Individual::Individual(Params & params, std::string fileName) : Individual(param
 		if ((int)chromT.size() != params.nbClients) throw std::string("Input solution does not contain the correct number of clients");
 		if (!eval.isFeasible) throw std::string("Input solution is infeasible");
 		if (eval.penalizedCost != readCost)throw std::string("Input solution has a different cost than announced in the file");
-		if (params.verbose) hgs_log_stream() << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
+		if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
 	}
 	else 
 		throw std::string("Impossible to open solution file provided in input in : " + fileName);

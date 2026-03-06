@@ -1,42 +1,41 @@
 #include "Params.h"
-#include "Logger.h"
 
-// The universal constructor for both executable and shared library
-// When the executable is run from the commandline,
-// it will first generate an CVRPLIB instance from .vrp file, then supply necessary information.
 Params::Params(
-	const std::vector<double>& x_coords,
-	const std::vector<double>& y_coords,
-	const std::vector<std::vector<double>>& dist_mtx,
-	const std::vector<double>& service_time,
-	const std::vector<double>& demands,
+	const double* x_coords,
+	const double* y_coords,
+	const double* dist_mtx,
+	const double* service_time,
+	const double* demands,
+	int nbNodes,
 	double vehicleCapacity,
 	double durationLimit,
 	int nbVeh,
 	bool isDurationConstraint,
 	bool verbose,
-	const AlgorithmParameters& ap
+	const AlgorithmParameters& ap,
+	std::ostream& logStream
 )
 	: ap(ap), isDurationConstraint(isDurationConstraint), nbVehicles(nbVeh), durationLimit(durationLimit),
-	  vehicleCapacity(vehicleCapacity), timeCost(dist_mtx), verbose(verbose)
+	  vehicleCapacity(vehicleCapacity), timeCost_(dist_mtx), timeCostN_(nbNodes), verbose(verbose), logStream(logStream)
 {
 	// This marks the starting time of the algorithm
-	startTime = clock();
+	startTime = ThreadCpuTimer::now();
 
-	nbClients = (int)demands.size() - 1; // Need to substract the depot from the number of nodes
+	nbClients = nbNodes - 1; // Need to substract the depot from the number of nodes
 	totalDemand = 0.;
 	maxDemand = 0.;
 
 	// Initialize RNG
 	ran.seed(ap.seed);
 
-	// check if valid coordinates are provided
-	areCoordinatesProvided = (demands.size() == x_coords.size()) && (demands.size() == y_coords.size());
+	// Coordinates are considered provided when both pointers are non-null.
+	// In that case, callers must provide at least nbNodes values in each array.
+	areCoordinatesProvided = (x_coords != nullptr && y_coords != nullptr);
 
 	cli = std::vector<Client>(nbClients + 1);
 	for (int i = 0; i <= nbClients; i++)
 	{
-		// If useSwapStar==false, x_coords and y_coords may be empty.
+		// To disable coordinates/SWAP* in this API, pass nullptr for both coordinate pointers.
 		if (ap.useSwapStar == 1 && areCoordinatesProvided)
 		{
 			cli[i].coordX = x_coords[i];
@@ -58,26 +57,26 @@ Params::Params(
 	}
 
 	if (verbose && ap.useSwapStar == 1 && !areCoordinatesProvided)
-		hgs_log_stream() << "----- NO COORDINATES HAVE BEEN PROVIDED, SWAP* NEIGHBORHOOD WILL BE DEACTIVATED BY DEFAULT" << std::endl;
+		logStream << "----- NO COORDINATES HAVE BEEN PROVIDED, SWAP* NEIGHBORHOOD WILL BE DEACTIVATED BY DEFAULT" << std::endl;
 
 	// Default initialization if the number of vehicles has not been provided by the user
-	if (nbVehicles == INT_MAX)
+	if (nbVehicles < 0)
 	{
 		nbVehicles = (int)std::ceil(1.3*totalDemand/vehicleCapacity) + 3;  // Safety margin: 30% + 3 more vehicles than the trivial bin packing LB
-		if (verbose) 
-			hgs_log_stream() << "----- FLEET SIZE WAS NOT SPECIFIED: DEFAULT INITIALIZATION TO " << nbVehicles << " VEHICLES" << std::endl;
+		if (verbose)
+			logStream << "----- FLEET SIZE WAS NOT SPECIFIED: DEFAULT INITIALIZATION TO " << nbVehicles << " VEHICLES" << std::endl;
 	}
 	else
 	{
 		if (verbose)
-			hgs_log_stream() << "----- FLEET SIZE SPECIFIED: SET TO " << nbVehicles << " VEHICLES" << std::endl;
+			logStream << "----- FLEET SIZE SPECIFIED: SET TO " << nbVehicles << " VEHICLES" << std::endl;
 	}
 
 	// Calculation of the maximum distance
 	maxDist = 0.;
 	for (int i = 0; i <= nbClients; i++)
 		for (int j = 0; j <= nbClients; j++)
-			if (timeCost[i][j] > maxDist) maxDist = timeCost[i][j];
+			if (timeCost(i, j) > maxDist) maxDist = timeCost(i, j);
 
 	// Calculation of the correlated vertices for each customer (for the granular restriction)
 	correlatedVertices = std::vector<std::vector<int> >(nbClients + 1);
@@ -87,7 +86,7 @@ Params::Params(
 	{
 		orderProximity.clear();
 		for (int j = 1; j <= nbClients; j++)
-			if (i != j) orderProximity.emplace_back(timeCost[i][j], j);
+			if (i != j) orderProximity.emplace_back(timeCost(i, j), j);
 		std::sort(orderProximity.begin(), orderProximity.end());
 
 		for (int j = 0; j < std::min<int>(ap.nbGranular, nbClients - 1); j++)
@@ -118,7 +117,10 @@ Params::Params(
 	penaltyCapacity = std::max<double>(0.1, std::min<double>(1000., maxDist / maxDemand));
 
 	if (verbose)
-		hgs_log_stream() << "----- INSTANCE SUCCESSFULLY LOADED WITH " << nbClients << " CLIENTS AND " << nbVehicles << " VEHICLES" << std::endl;
+		logStream << "----- INSTANCE SUCCESSFULLY LOADED WITH " << nbClients << " CLIENTS AND " << nbVehicles << " VEHICLES" << std::endl;
 }
 
-
+double Params::elapsedSeconds() const
+{
+	return ThreadCpuTimer::elapsedSeconds(startTime);
+}

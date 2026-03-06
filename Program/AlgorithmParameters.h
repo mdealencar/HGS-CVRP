@@ -2,10 +2,10 @@
 // Created by chkwon on 3/23/22.
 //
 
-// This header file must be readable in C.
-
 #ifndef ALGORITHMPARAMETERS_H
 #define ALGORITHMPARAMETERS_H
+
+#include <ostream>
 
 struct AlgorithmParameters {
 	int nbGranular;			// Granular search parameter, limits the number of moves in the RI local search
@@ -26,13 +26,7 @@ struct AlgorithmParameters {
 	int useSwapStar;		// Use SWAP* local search or not. Default value: 1. Only available when coordinates are provided.
 };
 
-#ifdef __cplusplus
-extern "C"
-#endif
-struct AlgorithmParameters default_algorithm_parameters();
-
-#ifdef __cplusplus
-void print_algorithm_parameters(const AlgorithmParameters & ap);
-#endif
+AlgorithmParameters default_algorithm_parameters();
+void print_algorithm_parameters(const AlgorithmParameters & ap, std::ostream& out);
 
 #endif //ALGORITHMPARAMETERS_H

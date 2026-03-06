@@ -1,5 +1,13 @@
 
-[![CI_Build](https://github.com/vidalt/HGS-CVRP/actions/workflows/CI_Build.yml/badge.svg?branch=main)](https://github.com/vidalt/HGS-CVRP/actions/workflows/CI_Build.yml)
+[![CI_Build](https://github.com/mdealencar/HGS-CVRP/actions/workflows/CI_Build.yml/badge.svg?branch=main)](https://github.com/mdealencar/HGS-CVRP/actions/workflows/CI_Build.yml)
+
+Forked from <https://github.com/vidalt/HGS-CVRP>
+
+# Motivation for the fork
+
+Better integration with the Python bindings [HybGenSea](https://github.com/mdealencar/PyHygese). No changes were made to the algorithm itself.
+
+Relevant parts of the original project's README follows:
 
 # HGS-CVRP: A modern implementation of the Hybrid Genetic Search for the CVRP
 
@@ -22,16 +30,6 @@ https://doi.org/10.1016/j.cor.2021.105643 (Available [HERE](https://arxiv.org/ab
 
 We also recommend referring to the Github version of the code used, as future versions may achieve better performance as the code evolves.
 The version associated with the results presented in [2] is [v1.0.0](https://github.com/vidalt/HGS-CVRP/releases/tag/v1.0.0).
-
-## Other programming languages
-
-There exist wrappers for this code in the following languages:
-* **C**: The **C_Interface** file contains a simple C API
-* **Python**: The [PyHygese](https://github.com/chkwon/PyHygese) package is maintained to interact with the latest release of this algorithm
-* **Julia**: The [Hygese.jl](https://github.com/chkwon/Hygese.jl) package is maintained to interact with the latest release of this algorithm
-
-We encourage you to consider using these wrappers in your different projects.
-Please contact me if you wish to list other wrappers and interfaces in this section.
 
 ## Scope
 
@@ -141,36 +139,19 @@ make lib
 This will generate the library file, `libhgscvrp.so` (Linux), `libhgscvrp.dylib` (macOS), or `hgscvrp.dll` (Windows),
 in the `build` directory.
 
-To test calling the shared library from a C code:
+To test calling the shared library from a C++ code:
 ```console
-make lib_test_c
+make lib_test_cpp
 ctest -R lib --verbose
 ```
 
-### Redirecting library logs (useful for Python bindings)
+### C++ API input contract (`Params`)
 
-When the solver is called through the shared library, logs can be redirected with the C API:
-
-- `hgs_set_output_stdout()` (default)
-- `hgs_set_output_stderr()`
-- `hgs_set_output_file(const char* filePath)`
-
-This makes it easy to capture solver output from Python bindings by sending logs to a file or `stderr`.
-
-## Contributing
-
-Thank you very much for your interest in this code.
-This code is still actively maintained and evolving. Pull requests and contributions seeking to improve the code in terms of readability, usability, and performance are welcome. Development is conducted in the `dev` branch. I recommend to contact me beforehand at <thibaut.vidal@polymtl.ca> before any major rework.
-
-As a general guideline, the goal of this code is to stay **simple**, **stand-alone**, and **specialized** to the CVRP. 
-Contributions that aim to extend this approach to different variants of the vehicle routing problem should usually remain in a separate repository.
-Similarly, additional libraries or significant increases of conceptual complexity will be avoided. Indeed, when developing (meta-)heuristics, it seems always possible to do a bit better at the cost of extra conceptual complexity. The overarching goal of this code is to find a good trade-off between algorithm simplicity and performance.
-
-There are two main types of contributions:
-* Changes that do not impact the sequence of solutions found by the HGS algorithm when running `ctest` and testing other instances with a fixed seed.
-This is visible by comparing the average solution value in the population and diversity through a test run. Such contributions include refactoring, simplification, and code optimization. Pull requests of this type are likely to be integrated more quickly.
-* Changes that impact the sequence of solutions found by the algorithm.
-In this case, I recommend to contact me beforehand with (i) a detailed description of the changes, (ii) detailed results on 10 runs of the algorithm for each of the 100 instances of Uchoa et al. (2017) before and after the changes, using the same termination criterion as used in [2](https://arxiv.org/abs/2012.10384).
+When constructing `Params` directly:
+- `dist_mtx` must point to a flat row-major matrix of size `nbNodes * nbNodes`
+- `service_time` and `demands` must each contain at least `nbNodes` values
+- if `x_coords` and `y_coords` are non-null, each must contain at least `nbNodes` values
+- to indicate that coordinates are not provided (and disable coordinate-based SWAP*), pass `nullptr` for both `x_coords` and `y_coords`
 
 ## License
 

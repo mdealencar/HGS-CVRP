@@ -1,5 +1,4 @@
 #include "Genetic.h"
-#include "Logger.h"
 
 void Genetic::run()
 {	
@@ -8,8 +7,8 @@ void Genetic::run()
 
 	int nbIter;
 	int nbIterNonProd = 1;
-	if (params.verbose) hgs_log_stream() << "----- STARTING GENETIC ALGORITHM" << std::endl;
-	for (nbIter = 0 ; nbIterNonProd <= params.ap.nbIter && (params.ap.timeLimit == 0 || (double)(clock()-params.startTime)/(double)CLOCKS_PER_SEC < params.ap.timeLimit) ; nbIter++)
+	if (params.verbose) params.logStream << "----- STARTING GENETIC ALGORITHM" << std::endl;
+	for (nbIter = 0 ; nbIterNonProd <= params.ap.nbIter && (params.ap.timeLimit == 0 || params.elapsedSeconds() < params.ap.timeLimit) ; nbIter++)
 	{	
 		/* SELECTION AND CROSSOVER */
 		crossoverOX(offspring, population.getBinaryTournament(),population.getBinaryTournament());
@@ -38,7 +37,7 @@ void Genetic::run()
 			nbIterNonProd = 1;
 		}
 	}
-	if (params.verbose) hgs_log_stream() << "----- GENETIC ALGORITHM FINISHED AFTER " << nbIter << " ITERATIONS. TIME SPENT: " << (double)(clock() - params.startTime) / (double)CLOCKS_PER_SEC << std::endl;
+	if (params.verbose) params.logStream << "----- GENETIC ALGORITHM FINISHED AFTER " << nbIter << " ITERATIONS. TIME SPENT: " << params.elapsedSeconds() << std::endl;
 }
 
 void Genetic::crossoverOX(Individual & result, const Individual & parent1, const Individual & parent2)
@@ -84,4 +83,3 @@ Genetic::Genetic(Params & params) :
 	localSearch(params),
 	population(params,this->split,this->localSearch),
 	offspring(params){}
-

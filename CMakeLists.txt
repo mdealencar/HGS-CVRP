@@ -11,15 +11,25 @@ set(
         Program/Population.cpp
         Program/Split.cpp
         Program/InstanceCVRPLIB.cpp
-        Program/AlgorithmParameters.cpp
-        Program/C_Interface.cpp
-        Program/Logger.cpp)
+        Program/AlgorithmParameters.cpp)
+
+set(
+        public_headers
+        Program/AlgorithmParameters.h
+        Program/CircleSector.h
+        Program/Genetic.h
+        Program/Individual.h
+        Program/InstanceCVRPLIB.h
+        Program/LocalSearch.h
+        Program/Params.h
+        Program/Population.h
+        Program/Split.h
+        Program/ThreadCpuTimer.h
+        Program/commandline.h)
 
 if (MSVC)
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif (MSVC)
-
-include_directories(Program)
 
 # object to be used by both static and shared (compile only once)
 add_library(objlib OBJECT ${src_files})
@@ -28,6 +38,10 @@ set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 # runtime library
 add_library(lib SHARED $<TARGET_OBJECTS:objlib>)
 set_target_properties(lib PROPERTIES OUTPUT_NAME hgscvrp)
+target_include_directories(lib
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Program>
+        $<INSTALL_INTERFACE:include>)
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # We're in the root, build everything
@@ -36,6 +50,10 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # if static and runtime libraries use name "hgscvrp", MSVC will overwrite one
     # of them, because both STATIC and SHARED builds create "hgscvrp.lib"
     set_target_properties(lib_static PROPERTIES OUTPUT_NAME hgscvrp_static)
+    target_include_directories(lib_static
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Program>
+            $<INSTALL_INTERFACE:include>)
 
     # Build Executable
 
@@ -70,17 +88,16 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
                                         -DROUND=0
                                         -P ${PROJECT_SOURCE_DIR}/Test/TestExecutable.cmake)
 
-    # Test Library
-    add_subdirectory(Test/Test-c/)
-    add_test(NAME       lib_test_c
-             COMMAND    lib_test_c)
+    # Test Library (C++ interface)
+    add_subdirectory(Test/Test-cpp/)
+    add_test(NAME       lib_test_cpp
+             COMMAND    lib_test_cpp)
 
     # Install
     install(TARGETS lib
             DESTINATION lib)
     install(TARGETS bin
             DESTINATION bin)
-    install(FILES Program/AlgorithmParameters.h Program/C_Interface.h
+    install(FILES ${public_headers}
             DESTINATION include)
 endif()
-

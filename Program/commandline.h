@@ -33,7 +33,7 @@ class CommandLine
 public:
 	AlgorithmParameters ap = default_algorithm_parameters();
 
-	int nbVeh		 = INT_MAX;		// Number of vehicles. Default value: infinity
+	int nbVeh		 = -1;			// Number of vehicles. Default value: -1 (auto)
 	std::string pathInstance;		// Instance path
 	std::string pathSolution;		// Solution path
 	bool verbose     = true;
