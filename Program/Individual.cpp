@@ -43,7 +43,7 @@ void Individual::allocateChromosomes(const Params & params)
 	eval.penalizedCost = 1.e30;
 }
 
-void Individual::initFromRoutes(Params & params, const std::vector < std::vector <int> > & routes)
+Individual::Individual(Params & params, const std::vector < std::vector <int> > & routes)
 {
 	allocateChromosomes(params);
 
@@ -87,12 +87,7 @@ Individual::Individual(Params & params)
 	std::shuffle(chromT.begin(), chromT.end(), params.ran);
 }
 
-Individual::Individual(Params & params, const std::vector < std::vector <int> > & routes)
-{
-	initFromRoutes(params, routes);
-}
-
-Individual::Individual(Params & params, std::string fileName)
+Individual Individual::fromCVRPLibFile(Params & params, const std::string & fileName)
 {
 	std::ifstream inputFile(fileName);
 	if (!inputFile.is_open())
@@ -118,10 +113,11 @@ Individual::Individual(Params & params, std::string fileName)
 	else throw std::runtime_error("Unexpected token in input solution");
 
 	// Validates the routes and evaluates the solution
-	initFromRoutes(params, routes);
+	Individual indiv(params, routes);
 
 	// Some safety checks and printouts, specific to reading a solution announced by a file
-	if (!eval.isFeasible) throw std::invalid_argument("Input solution is infeasible");
-	if (eval.penalizedCost != readCost) throw std::invalid_argument("Input solution has a different cost than announced in the file");
-	if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
+	if (!indiv.eval.isFeasible) throw std::invalid_argument("Input solution is infeasible");
+	if (indiv.eval.penalizedCost != readCost) throw std::invalid_argument("Input solution has a different cost than announced in the file");
+	if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << indiv.eval.penalizedCost << std::endl;
+	return indiv;
 }

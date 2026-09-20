@@ -7,6 +7,8 @@
 #include "Genetic.h"
 #include <cassert>
 #include <cmath>
+#include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -272,9 +274,7 @@ int main()
 
         // An initial solution that breaks the capacity limit is accepted, and simply evaluated as
         // infeasible: the population keeps such individuals in its infeasible subpopulation
-        // Named rather than a braced literal: see the note on the constructor in Individual.h
-        std::vector<std::vector<int>> single_route = {{1, 2, 3, 4, 5, 6, 7, 8, 9}};
-        Individual overloaded(params, single_route);
+        Individual overloaded(params, {{1, 2, 3, 4, 5, 6, 7, 8, 9}});
         assert(!overloaded.eval.isFeasible);
         assert(overloaded.eval.capacityExcess > 0.);
         assert(overloaded.eval.nbRoutes == 1);
@@ -297,6 +297,24 @@ int main()
         rejects({{1, 2, 3, 4}, {5, 6, 7, 8}}, "a client left out");
         rejects({{1, 2, 3, 4}, {5, 6, 7, 8, 10}}, "a node outside the client range");
         rejects({{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}}, "the depot listed as a client");
+
+        // The same solution written out in CVRPLib format reads back to the same individual
+        std::string solPath = "test_individual_roundtrip.sol";
+        {
+            std::ofstream out(solPath);
+            for (size_t r = 0; r < sol9.routes.size(); r++) {
+                out << "Route #" << r + 1 << ":";
+                for (int client : sol9.routes[r]) out << " " << client;
+                out << std::endl;
+            }
+            out << "Cost " << seeded.eval.penalizedCost << std::endl;
+        }
+        Individual reread = Individual::fromCVRPLibFile(params, solPath);
+        assert(reread.eval.penalizedCost == seeded.eval.penalizedCost);
+        assert(reread.chromT == seeded.chromT);
+        assert(reread.chromR == seeded.chromR);
+        std::cout << "re-read from file, cost = " << reread.eval.penalizedCost << std::endl;
+        std::remove(solPath.c_str());
     }
 
     std::cout << "======== ALL TESTS PASSED ========" << std::endl;

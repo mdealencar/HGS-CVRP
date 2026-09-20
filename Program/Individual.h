@@ -56,24 +56,21 @@ public:
   // Constructor of an individual from a solution given as one sequence of clients per route, in the
   // same shape as chromR: the depot is implicit and clients are numbered from 1 (useful if a user
   // wishes to input an initial solution). The routes must together visit every client exactly once
-  // and must not outnumber the fleet, but the solution may exceed the capacity or duration limits;
-  // such an individual is simply evaluated as infeasible. Unlike the random constructor, this one
-  // does not draw from params.ran, so seeding a population leaves the random stream untouched.
-  // Pass a named vector: a braced initializer list is ambiguous with the file name overload below,
-  // because std::string can also be built from a list of integers.
+  // and must not outnumber the fleet, otherwise std::invalid_argument is thrown; the solution may
+  // however exceed the capacity or duration limits, and is then evaluated as infeasible. Unlike the
+  // random constructor, this one does not draw from params.ran, so seeding a population leaves the
+  // random stream untouched.
   Individual(Params & params, const std::vector < std::vector <int> > & routes);
 
-  // Constructor of an individual from a file in CVRPLib solution format as produced by the algorithm (useful if a user wishes to input an initial solution)
-  Individual(Params & params, std::string fileName);
+  // Reads an individual from a file in CVRPLib solution format, as written by
+  // Population::exportCVRPLibFormat (useful if a user wishes to input an initial solution).
+  // The routes are validated as by the constructor above, and the solution is additionally required
+  // to be feasible and to match the cost the file announces.
+  static Individual fromCVRPLibFile(Params & params, const std::string & fileName);
 
 private:
 
   // Allocates the chromosome structures for an empty solution, without drawing from params.ran
   void allocateChromosomes(const Params & params);
-
-  // Fills the chromosomes from one sequence of clients per route, then evaluates the solution.
-  // Throws std::invalid_argument if the routes outnumber the fleet or do not form a permutation
-  // of the clients, which would otherwise corrupt the chromosomes.
-  void initFromRoutes(Params & params, const std::vector < std::vector <int> > & routes);
 };
 #endif
