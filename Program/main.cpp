@@ -3,7 +3,14 @@
 #include "LocalSearch.h"
 #include "Split.h"
 #include "InstanceCVRPLIB.h"
+#include <stdexcept>
 using namespace std;
+
+// Exit status codes. Kept as explicit values rather than EXIT_SUCCESS/EXIT_FAILURE so that
+// the contract documented in the README holds on every platform.
+static constexpr int EXIT_OK    = 0;	// A solution was found and written
+static constexpr int EXIT_ERROR = 1;	// The run failed: unreadable instance, invalid data, no solution
+static constexpr int EXIT_USAGE = 2;	// The command line itself was malformed
 
 int main(int argc, char *argv[])
 {
@@ -36,13 +43,14 @@ int main(int argc, char *argv[])
 		solver.run();
 		
 		// Exporting the best solution
-		if (solver.population.getBestFound() != NULL)
-		{
-			if (params.verbose) std::cout << "----- WRITING BEST SOLUTION IN : " << commandline.pathSolution << std::endl;
-			solver.population.exportCVRPLibFormat(*solver.population.getBestFound(),commandline.pathSolution);
-			solver.population.exportSearchProgress(commandline.pathSolution + ".PG.csv", commandline.pathInstance);
-		}
+		if (solver.population.getBestFound() == NULL)
+			throw std::runtime_error("No feasible solution was found, nothing to write.");
+
+		if (params.verbose) std::cout << "----- WRITING BEST SOLUTION IN : " << commandline.pathSolution << std::endl;
+		solver.population.exportCVRPLibFormat(*solver.population.getBestFound(),commandline.pathSolution);
+		solver.population.exportSearchProgress(commandline.pathSolution + ".PG.csv", commandline.pathInstance);
 	}
-	catch (const std::exception& e) { std::cout << "EXCEPTION | " << e.what() << std::endl; }
-	return 0;
+	catch (const CommandLineError& e) { std::cerr << "EXCEPTION | " << e.what() << std::endl; return EXIT_USAGE; }
+	catch (const std::exception& e) { std::cerr << "EXCEPTION | " << e.what() << std::endl; return EXIT_ERROR; }
+	return EXIT_OK;
 }

@@ -29,6 +29,14 @@ SOFTWARE.*/
 #include <stdexcept>
 #include "AlgorithmParameters.h"
 
+// Signals a malformed command line, as opposed to a problem with the data it refers to.
+// Callers map this to a distinct exit status; see the exit codes in main.cpp.
+class CommandLineError : public std::invalid_argument
+{
+public:
+	explicit CommandLineError(const std::string & what) : std::invalid_argument(what) {}
+};
+
 class CommandLine
 {
 public:
@@ -45,8 +53,8 @@ public:
 	{
 		if (argc % 2 != 1 || argc > 35 || argc < 3)
 		{
-			std::cout << "----- NUMBER OF COMMANDLINE ARGUMENTS IS INCORRECT: " << argc << std::endl;
-			display_help(); throw std::invalid_argument("Incorrect line of command");
+			std::cerr << "----- NUMBER OF COMMANDLINE ARGUMENTS IS INCORRECT: " << argc << std::endl;
+			display_help(std::cerr); throw CommandLineError("Incorrect line of command");
 		}
 		else
 		{
@@ -88,39 +96,40 @@ public:
 					ap.penaltyDecrease = atof(argv[i+1]);
 				else
 				{
-					std::cout << "----- ARGUMENT NOT RECOGNIZED: " << std::string(argv[i]) << std::endl;
-					display_help(); throw std::invalid_argument("Incorrect line of command");
+					std::cerr << "----- ARGUMENT NOT RECOGNIZED: " << std::string(argv[i]) << std::endl;
+					display_help(std::cerr); throw CommandLineError("Incorrect line of command");
 				}
 			}
 		}
 	}
 
-	// Printing information about how to use the code
-	void display_help()
+	// Printing information about how to use the code. Defaults to the standard output;
+	// pass std::cerr when the usage text accompanies a command line error.
+	void display_help(std::ostream & out = std::cout)
 	{
-		std::cout << std::endl;
-		std::cout << "-------------------------------------------------- HGS-CVRP algorithm (2020) ---------------------------------------------------" << std::endl;
-		std::cout << "Call with: ./hgs instancePath solPath [-it nbIter] [-t myCPUtime] [-seed mySeed] [-veh nbVehicles] [-log verbose]               " << std::endl;
-		std::cout << "[-it <int>] sets a maximum number of iterations without improvement. Defaults to 20,000                                         " << std::endl;
-		std::cout << "[-t <double>] sets a time limit in seconds. If this parameter is set the code will be run iteratively until the time limit      " << std::endl;
-		std::cout << "[-seed <int>] sets a fixed seed. Defaults to 0                                                                                  " << std::endl;
-		std::cout << "[-veh <int>] sets a prescribed fleet size. Otherwise a reasonable UB on the the fleet size is calculated                        " << std::endl;
-		std::cout << "[-round <bool>] rounding the distance to the nearest integer or not. It can be 0 (not rounding) or 1 (rounding). Defaults to 1. " << std::endl;
-		std::cout << "[-log <bool>] sets the verbose level of the algorithm log. It can be 0 or 1. Defaults to 1.                                     " << std::endl;
-		std::cout << std::endl;
-		std::cout << "Additional Arguments:                                                                                                           " << std::endl;
-		std::cout << "[-nbIterTraces <int>] Number of iterations between traces display during HGS execution. Defaults to 500                         " << std::endl;
-		std::cout << "[-nbGranular <int>] Granular search parameter, limits the number of moves in the RI local search. Defaults to 20                " << std::endl;
-		std::cout << "[-mu <int>] Minimum population size. Defaults to 25                                                                             " << std::endl;
-		std::cout << "[-lambda <int>] Number of solutions created before reaching the maximum population size (i.e., generation size). Defaults to 40 " << std::endl;
-		std::cout << "[-nbElite <int>] Number of elite individuals. Defaults to 5                                                                     " << std::endl;
-		std::cout << "[-nbClose <int>] Number of closest solutions/individuals considered when calculating diversity contribution. Defaults to 4      " << std::endl;
-		std::cout << "[-nbIterPenaltyManagement <int>] Number of iterations between penalty updates. Defaults to 100                                  " << std::endl;
-		std::cout << "[-targetFeasible <double>] target ratio of feasible individuals between penalty updates. Defaults to 0.2                        " << std::endl;
-		std::cout << "[-penaltyIncrease <double>] penalty increase if insufficient feasible individuals between penalty updates. Defaults to 1.2      " << std::endl;
-		std::cout << "[-penaltyDecrease <double>] penalty decrease if sufficient feasible individuals between penalty updates. Defaults to 0.85       " << std::endl;
-		std::cout << "--------------------------------------------------------------------------------------------------------------------------------" << std::endl;
-		std::cout << std::endl;
+		out << std::endl;
+		out << "-------------------------------------------------- HGS-CVRP algorithm (2020) ---------------------------------------------------" << std::endl;
+		out << "Call with: ./hgs instancePath solPath [-it nbIter] [-t myCPUtime] [-seed mySeed] [-veh nbVehicles] [-log verbose]               " << std::endl;
+		out << "[-it <int>] sets a maximum number of iterations without improvement. Defaults to 20,000                                         " << std::endl;
+		out << "[-t <double>] sets a time limit in seconds. If this parameter is set the code will be run iteratively until the time limit      " << std::endl;
+		out << "[-seed <int>] sets a fixed seed. Defaults to 0                                                                                  " << std::endl;
+		out << "[-veh <int>] sets a prescribed fleet size. Otherwise a reasonable UB on the the fleet size is calculated                        " << std::endl;
+		out << "[-round <bool>] rounding the distance to the nearest integer or not. It can be 0 (not rounding) or 1 (rounding). Defaults to 1. " << std::endl;
+		out << "[-log <bool>] sets the verbose level of the algorithm log. It can be 0 or 1. Defaults to 1.                                     " << std::endl;
+		out << std::endl;
+		out << "Additional Arguments:                                                                                                           " << std::endl;
+		out << "[-nbIterTraces <int>] Number of iterations between traces display during HGS execution. Defaults to 500                         " << std::endl;
+		out << "[-nbGranular <int>] Granular search parameter, limits the number of moves in the RI local search. Defaults to 20                " << std::endl;
+		out << "[-mu <int>] Minimum population size. Defaults to 25                                                                             " << std::endl;
+		out << "[-lambda <int>] Number of solutions created before reaching the maximum population size (i.e., generation size). Defaults to 40 " << std::endl;
+		out << "[-nbElite <int>] Number of elite individuals. Defaults to 5                                                                     " << std::endl;
+		out << "[-nbClose <int>] Number of closest solutions/individuals considered when calculating diversity contribution. Defaults to 4      " << std::endl;
+		out << "[-nbIterPenaltyManagement <int>] Number of iterations between penalty updates. Defaults to 100                                  " << std::endl;
+		out << "[-targetFeasible <double>] target ratio of feasible individuals between penalty updates. Defaults to 0.2                        " << std::endl;
+		out << "[-penaltyIncrease <double>] penalty increase if insufficient feasible individuals between penalty updates. Defaults to 1.2      " << std::endl;
+		out << "[-penaltyDecrease <double>] penalty decrease if sufficient feasible individuals between penalty updates. Defaults to 0.85       " << std::endl;
+		out << "--------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+		out << std::endl;
 	};
 };
 #endif

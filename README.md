@@ -88,6 +88,14 @@ Additional Arguments:
 [-penaltyDecrease <double>] penalty decrease if sufficient feasible individuals between penalty updates. Defaults to 0.85
 ```
 
+The executable reports the outcome of a run through its exit status, and writes any error message to the standard error stream:
+
+| Status | Meaning |
+| ------ | ------- |
+| 0 | A solution was found and written to `solPath` |
+| 1 | The run failed: the instance could not be read, the data was rejected, or no feasible solution was found |
+| 2 | The command line was malformed |
+
 There exist different conventions regarding distance calculations in the academic literature.
 The default code behavior is to apply integer rounding, as it should be done on the X instances of Uchoa et al. (2017).
 To change this behavior (e.g., when testing on the CMT or Golden instances), give a flag `-round 0`, when you run the executable.
