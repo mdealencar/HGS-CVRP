@@ -33,50 +33,95 @@ void Individual::evaluateCompleteCost(const Params & params)
 	eval.isFeasible = (eval.capacityExcess < MY_EPSILON && eval.durationExcess < MY_EPSILON);
 }
 
-Individual::Individual(Params & params)
+void Individual::allocateChromosomes(const Params & params)
 {
 	successors = std::vector <int>(params.nbClients + 1);
 	predecessors = std::vector <int>(params.nbClients + 1);
 	chromR = std::vector < std::vector <int> >(params.nbVehicles);
-	chromT = std::vector <int>(params.nbClients);
-	for (int i = 0; i < params.nbClients; i++) chromT[i] = i + 1;
-	std::shuffle(chromT.begin(), chromT.end(), params.ran);
-	eval.penalizedCost = 1.e30;	
+	chromT.clear();
+	chromT.reserve(params.nbClients);
+	eval.penalizedCost = 1.e30;
 }
 
-Individual::Individual(Params & params, std::string fileName) : Individual(params)
+void Individual::initFromRoutes(Params & params, const std::vector < std::vector <int> > & routes)
 {
-	double readCost;
-	chromT.clear();
-	std::ifstream inputFile(fileName);
-	if (inputFile.is_open())
-	{
-		std::string inputString;
-		inputFile >> inputString;
-		// Loops in the input file as long as the first line keyword is "Route"
-		for (int r = 0; inputString == "Route"; r++)
-		{
-			inputFile >> inputString;
-			getline(inputFile, inputString);
-			std::stringstream ss(inputString);
-			int inputCustomer;
-			while (ss >> inputCustomer) // Loops as long as there is an integer to read in this route
-			{
-				chromT.push_back(inputCustomer);
-				chromR[r].push_back(inputCustomer);
-			}
-			inputFile >> inputString;
-		}
-		if (inputString == "Cost") inputFile >> readCost;
-		else throw std::runtime_error("Unexpected token in input solution");
+	allocateChromosomes(params);
 
-		// Some safety checks and printouts
-		evaluateCompleteCost(params);
-		if ((int)chromT.size() != params.nbClients) throw std::invalid_argument("Input solution does not contain the correct number of clients");
-		if (!eval.isFeasible) throw std::invalid_argument("Input solution is infeasible");
-		if (eval.penalizedCost != readCost)throw std::invalid_argument("Input solution has a different cost than announced in the file");
-		if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
+	// chromR has one entry per vehicle, so a solution using more routes than that would write past its end
+	if ((int)routes.size() > params.nbVehicles)
+		throw std::invalid_argument("Input solution uses " + std::to_string(routes.size())
+			+ " routes, more than the fleet size of " + std::to_string(params.nbVehicles));
+
+	// The chromosomes, and the crossover operating on them, are only meaningful if every client is
+	// visited exactly once, so a malformed solution is rejected rather than silently corrupting them
+	std::vector <bool> isVisited(params.nbClients + 1, false);
+	for (int r = 0; r < (int)routes.size(); r++)
+	{
+		for (int client : routes[r])
+		{
+			if (client < 1 || client > params.nbClients)
+				throw std::invalid_argument("Input solution visits " + std::to_string(client)
+					+ ", which is not a client index in [1, " + std::to_string(params.nbClients) + "]");
+			if (isVisited[client])
+				throw std::invalid_argument("Input solution visits client " + std::to_string(client) + " more than once");
+			isVisited[client] = true;
+			chromT.push_back(client);
+			chromR[r].push_back(client);
+		}
 	}
-	else 
+	if ((int)chromT.size() != params.nbClients)
+	{
+		// Without duplicates or out-of-range entries, too few visits means a client was left out
+		int missing = 1;
+		while (missing <= params.nbClients && isVisited[missing]) missing++;
+		throw std::invalid_argument("Input solution does not visit client " + std::to_string(missing));
+	}
+
+	evaluateCompleteCost(params);
+}
+
+Individual::Individual(Params & params)
+{
+	allocateChromosomes(params);
+	for (int i = 1; i <= params.nbClients; i++) chromT.push_back(i);
+	std::shuffle(chromT.begin(), chromT.end(), params.ran);
+}
+
+Individual::Individual(Params & params, const std::vector < std::vector <int> > & routes)
+{
+	initFromRoutes(params, routes);
+}
+
+Individual::Individual(Params & params, std::string fileName)
+{
+	std::ifstream inputFile(fileName);
+	if (!inputFile.is_open())
 		throw std::runtime_error("Impossible to open solution file provided in input in : " + fileName);
+
+	double readCost;
+	std::vector < std::vector <int> > routes;
+	std::string inputString;
+	inputFile >> inputString;
+	// Loops in the input file as long as the first line keyword is "Route"
+	while (inputString == "Route")
+	{
+		inputFile >> inputString;
+		getline(inputFile, inputString);
+		std::stringstream ss(inputString);
+		routes.emplace_back();
+		int inputCustomer;
+		while (ss >> inputCustomer) // Loops as long as there is an integer to read in this route
+			routes.back().push_back(inputCustomer);
+		inputFile >> inputString;
+	}
+	if (inputString == "Cost") inputFile >> readCost;
+	else throw std::runtime_error("Unexpected token in input solution");
+
+	// Validates the routes and evaluates the solution
+	initFromRoutes(params, routes);
+
+	// Some safety checks and printouts, specific to reading a solution announced by a file
+	if (!eval.isFeasible) throw std::invalid_argument("Input solution is infeasible");
+	if (eval.penalizedCost != readCost) throw std::invalid_argument("Input solution has a different cost than announced in the file");
+	if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
 }

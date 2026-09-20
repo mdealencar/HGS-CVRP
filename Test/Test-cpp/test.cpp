@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 struct TestSolution {
@@ -235,6 +236,68 @@ int main()
     assert(log.find("GENETIC ALGORITHM") != std::string::npos);
     std::cout << "Log captured: " << log.size() << " bytes" << std::endl;
     assert(sol8.cost == 29);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::cout << "-------- test.cpp #9 (individual built from given routes) -----" << std::endl;
+    {
+        ap = default_algorithm_parameters();
+        ap.timeLimit = 0.5;
+        auto dist9 = euclidean_dist_mtx(x, y, true);
+        auto flat9 = flatten(dist9);
+        std::ostringstream log9;
+        Params params(x.data(), y.data(), flat9.data(), s.data(), d.data(), n,
+                      v_cap, 100000000, 2, false, false, ap, log9);
+        assert(params.nbClients == n - 1);
+
+        // A solution reported by the solver can be handed straight back, and evaluates to the same cost
+        auto sol9 = solve(x, y, dist9, s, d, v_cap, 100000000, 2, false, false, ap, log9);
+        Individual seeded(params, sol9.routes);
+        std::cout << "seeded cost = " << seeded.eval.penalizedCost
+                  << ", solver reported " << sol9.cost << std::endl;
+        assert(seeded.eval.penalizedCost == sol9.cost);
+        assert(seeded.eval.isFeasible);
+        assert(static_cast<int>(seeded.chromT.size()) == params.nbClients);
+        assert(seeded.chromR.size() == static_cast<size_t>(params.nbVehicles));
+
+        // Building a seeded individual must leave the random stream untouched, so that warm starting
+        // a run does not change the random individuals drawn after it
+        Params paramsA(x.data(), y.data(), flat9.data(), s.data(), d.data(), n,
+                       v_cap, 100000000, 2, false, false, ap, log9);
+        Params paramsB(x.data(), y.data(), flat9.data(), s.data(), d.data(), n,
+                       v_cap, 100000000, 2, false, false, ap, log9);
+        Individual discarded(paramsB, sol9.routes);
+        Individual randomA(paramsA);
+        Individual randomB(paramsB);
+        assert(randomA.chromT == randomB.chromT);
+
+        // An initial solution that breaks the capacity limit is accepted, and simply evaluated as
+        // infeasible: the population keeps such individuals in its infeasible subpopulation
+        // Named rather than a braced literal: see the note on the constructor in Individual.h
+        std::vector<std::vector<int>> single_route = {{1, 2, 3, 4, 5, 6, 7, 8, 9}};
+        Individual overloaded(params, single_route);
+        assert(!overloaded.eval.isFeasible);
+        assert(overloaded.eval.capacityExcess > 0.);
+        assert(overloaded.eval.nbRoutes == 1);
+        std::cout << "overloaded route excess = " << overloaded.eval.capacityExcess << std::endl;
+
+        // Routes that would corrupt the chromosomes are rejected instead
+        auto rejects = [&params](const std::vector<std::vector<int>>& routes, const char* what) {
+            try {
+                Individual bad(params, routes);
+                (void)bad;
+            } catch (const std::invalid_argument& e) {
+                std::cout << "rejected " << what << ": " << e.what() << std::endl;
+                return;
+            }
+            std::cout << "FAILED to reject " << what << std::endl;
+            assert(false);
+        };
+        rejects({{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}, "more routes than vehicles");
+        rejects({{1, 2, 3, 4}, {5, 6, 7, 8, 9, 9}}, "a client visited twice");
+        rejects({{1, 2, 3, 4}, {5, 6, 7, 8}}, "a client left out");
+        rejects({{1, 2, 3, 4}, {5, 6, 7, 8, 10}}, "a node outside the client range");
+        rejects({{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}}, "the depot listed as a client");
+    }
 
     std::cout << "======== ALL TESTS PASSED ========" << std::endl;
     return 0;
