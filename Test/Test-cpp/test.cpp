@@ -329,7 +329,47 @@ int main()
         assert(reread.chromT == seeded.chromT);
         assert(reread.chromR == seeded.chromR);
         std::cout << "re-read from file, cost = " << reread.eval.penalizedCost << std::endl;
+
+        // Reading a file rejects what the constructor rejects, plus what only a file can get wrong,
+        // and distinguishes a malformed or missing file from a solution that is merely wrong
+        auto writeSol = [](const std::string& path, const std::string& body) {
+            std::ofstream out(path);
+            out << body;
+        };
+        auto rejectsFile = [&params](const std::string& path, const char* what, bool expectRuntimeError) {
+            try {
+                Individual bad = Individual::fromCVRPLibFile(params, path);
+                (void)bad;
+            } catch (const std::invalid_argument& e) {
+                assert(!expectRuntimeError);
+                std::cout << "rejected " << what << ": " << e.what() << std::endl;
+                return;
+            } catch (const std::runtime_error& e) {
+                assert(expectRuntimeError);
+                std::cout << "rejected " << what << ": " << e.what() << std::endl;
+                return;
+            }
+            std::cout << "FAILED to reject " << what << std::endl;
+            assert(false);
+        };
+
+        writeSol(solPath, "Route #1: 1 2 3 4 5 6 7 8 9\nCost 100\n");
+        rejectsFile(solPath, "an infeasible solution file", false);
+
+        writeSol(solPath, "Route #1: 1 2 3\nRoute #2: 4 5 6\nRoute #3: 7 8 9\nCost 100\n");
+        rejectsFile(solPath, "a file using more routes than the fleet", false);
+
+        writeSol(solPath, "Route #1: 1 2 3 4\nRoute #2: 5 6 7 8\nCost 100\n");
+        rejectsFile(solPath, "a file leaving a client out", false);
+
+        writeSol(solPath, "Route #1: 1 2 3 4\nRoute #2: 5 6 7 8 9\nCost 999\n");
+        rejectsFile(solPath, "a file announcing a different cost", false);
+
+        writeSol(solPath, "Route #1: 1 2 3 4\nRoute #2: 5 6 7 8 9\nTotal 29\n");
+        rejectsFile(solPath, "a file with no cost line", true);
+
         std::remove(solPath.c_str());
+        rejectsFile("no_such_solution_file.sol", "a file that does not exist", true);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
