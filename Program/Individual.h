@@ -56,16 +56,20 @@ public:
   // Constructor of an individual from a solution given as one sequence of clients per route, in the
   // same shape as chromR: the depot is implicit and clients are numbered from 1 (useful if a user
   // wishes to input an initial solution). The routes must together visit every client exactly once
-  // and must not outnumber the fleet, otherwise std::invalid_argument is thrown; the solution may
-  // however exceed the capacity or duration limits, and is then evaluated as infeasible. Unlike the
-  // random constructor, this one does not draw from params.ran, so seeding a population leaves the
-  // random stream untouched.
-  Individual(Params & params, const std::vector < std::vector <int> > & routes);
+  // and must not outnumber the fleet, otherwise std::invalid_argument is thrown.
+  // A solution breaching the capacity or duration limits is rejected in the same way, on the
+  // assumption that it was not meant to: an initial solution is usually believed to be feasible, and
+  // accepting one that is not would quietly weaken the search instead of reporting the mistake.
+  // Set allowInfeasible to seed the search deliberately with an infeasible solution, which the
+  // population accommodates in its infeasible subpopulation.
+  // Unlike the random constructor, this one does not draw from params.ran, so seeding a population
+  // leaves the random stream untouched.
+  Individual(Params & params, const std::vector < std::vector <int> > & routes, bool allowInfeasible = false);
 
   // Reads an individual from a file in CVRPLib solution format, as written by
   // Population::exportCVRPLibFormat (useful if a user wishes to input an initial solution).
   // The routes are validated as by the constructor above, and the solution is additionally required
-  // to be feasible and to match the cost the file announces.
+  // to match the cost the file announces.
   static Individual fromCVRPLibFile(Params & params, const std::string & fileName);
 
 private:

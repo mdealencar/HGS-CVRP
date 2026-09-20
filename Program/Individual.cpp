@@ -43,7 +43,7 @@ void Individual::allocateChromosomes(const Params & params)
 	eval.penalizedCost = 1.e30;
 }
 
-Individual::Individual(Params & params, const std::vector < std::vector <int> > & routes)
+Individual::Individual(Params & params, const std::vector < std::vector <int> > & routes, bool allowInfeasible)
 {
 	allocateChromosomes(params);
 
@@ -78,6 +78,17 @@ Individual::Individual(Params & params, const std::vector < std::vector <int> > 
 	}
 
 	evaluateCompleteCost(params);
+
+	if (!allowInfeasible && !eval.isFeasible)
+	{
+		std::ostringstream reason;
+		reason << "Input solution is infeasible: it exceeds ";
+		if (eval.capacityExcess >= MY_EPSILON) reason << "the vehicle capacity by " << eval.capacityExcess;
+		if (eval.capacityExcess >= MY_EPSILON && eval.durationExcess >= MY_EPSILON) reason << " and ";
+		if (eval.durationExcess >= MY_EPSILON) reason << "the duration limit by " << eval.durationExcess;
+		reason << ". Set allowInfeasible to seed the search with it regardless.";
+		throw std::invalid_argument(reason.str());
+	}
 }
 
 Individual::Individual(Params & params)
@@ -112,11 +123,10 @@ Individual Individual::fromCVRPLibFile(Params & params, const std::string & file
 	if (inputString == "Cost") inputFile >> readCost;
 	else throw std::runtime_error("Unexpected token in input solution");
 
-	// Validates the routes and evaluates the solution
+	// Validates the routes and evaluates the solution, rejecting an infeasible one
 	Individual indiv(params, routes);
 
-	// Some safety checks and printouts, specific to reading a solution announced by a file
-	if (!indiv.eval.isFeasible) throw std::invalid_argument("Input solution is infeasible");
+	// A safety check and a printout, specific to reading a solution announced by a file
 	if (indiv.eval.penalizedCost != readCost) throw std::invalid_argument("Input solution has a different cost than announced in the file");
 	if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << indiv.eval.penalizedCost << std::endl;
 	return indiv;

@@ -272,9 +272,9 @@ int main()
         Individual randomB(paramsB);
         assert(randomA.chromT == randomB.chromT);
 
-        // An initial solution that breaks the capacity limit is accepted, and simply evaluated as
-        // infeasible: the population keeps such individuals in its infeasible subpopulation
-        Individual overloaded(params, {{1, 2, 3, 4, 5, 6, 7, 8, 9}});
+        // An initial solution breaching the capacity limit is only accepted when asked for, and is
+        // then evaluated as infeasible: the population keeps such individuals in its own subpopulation
+        Individual overloaded(params, {{1, 2, 3, 4, 5, 6, 7, 8, 9}}, true);
         assert(!overloaded.eval.isFeasible);
         assert(overloaded.eval.capacityExcess > 0.);
         assert(overloaded.eval.nbRoutes == 1);
@@ -297,6 +297,21 @@ int main()
         rejects({{1, 2, 3, 4}, {5, 6, 7, 8}}, "a client left out");
         rejects({{1, 2, 3, 4}, {5, 6, 7, 8, 10}}, "a node outside the client range");
         rejects({{0, 1, 2, 3, 4}, {5, 6, 7, 8, 9}}, "the depot listed as a client");
+        rejects({{1, 2, 3, 4, 5, 6, 7, 8, 9}}, "an infeasible solution, unless allowed");
+
+        // A solution breaching both limits is reported against both of them
+        Params tight(x.data(), y.data(), flat9.data(), s.data(), d.data(), n,
+                     v_cap, 5.0, 2, true, false, ap, log9);
+        try {
+            Individual both(tight, {{1, 2, 3, 4, 5, 6, 7, 8, 9}});
+            (void)both;
+            assert(false);
+        } catch (const std::invalid_argument& e) {
+            std::string msg = e.what();
+            std::cout << "rejected both breaches: " << msg << std::endl;
+            assert(msg.find("vehicle capacity") != std::string::npos);
+            assert(msg.find("duration limit") != std::string::npos);
+        }
 
         // The same solution written out in CVRPLib format reads back to the same individual
         std::string solPath = "test_individual_roundtrip.sol";
