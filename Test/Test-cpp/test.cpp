@@ -400,6 +400,54 @@ int main()
         assert(best->eval.penalizedCost <= given.eval.penalizedCost);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::cout << "-------- test.cpp #11 (reading the final population) -----" << std::endl;
+    {
+        ap = default_algorithm_parameters();
+        ap.timeLimit = 0.5;
+        auto dist11 = euclidean_dist_mtx(x, y, true);
+        auto flat11 = flatten(dist11);
+        std::ostringstream log11;
+        Params p11(x.data(), y.data(), flat11.data(), s.data(), d.data(), n,
+                   v_cap, 100000000, 2, false, false, ap, log11);
+        Genetic solver11(p11);
+        solver11.run();
+
+        auto feasible = solver11.population.getFeasibleSubpop();
+        auto infeasible = solver11.population.getInfeasibleSubpop();
+        std::cout << feasible.size() << " feasible and " << infeasible.size()
+                  << " infeasible individuals in the final population" << std::endl;
+        assert(!feasible.empty());
+
+        // Each subpopulation holds only what it says it does, ordered by increasing cost
+        for (size_t k = 0; k < feasible.size(); k++) {
+            assert(feasible[k]->eval.isFeasible);
+            if (k > 0) assert(feasible[k - 1]->eval.penalizedCost <= feasible[k]->eval.penalizedCost);
+        }
+        for (size_t k = 0; k < infeasible.size(); k++) {
+            assert(!infeasible[k]->eval.isFeasible);
+            if (k > 0) assert(infeasible[k - 1]->eval.penalizedCost <= infeasible[k]->eval.penalizedCost);
+        }
+
+        // The head of the feasible subpopulation is what getBestFeasible reports, and nothing alive
+        // beats the best found over the whole run
+        assert(feasible[0]->eval.penalizedCost == solver11.population.getBestFeasible()->eval.penalizedCost);
+        assert(solver11.population.getBestFound()->eval.penalizedCost <= feasible[0]->eval.penalizedCost);
+
+        // A feasible member is exactly what the constructor taking routes accepts: it goes back in
+        // without allowInfeasible, and evaluates to the cost it was reported with. For a feasible
+        // individual the penalized cost carries no penalty term, so it is the plain route distance
+        for (const Individual * member : feasible) {
+            std::vector<std::vector<int>> routes;
+            for (const auto& route : member->chromR)
+                if (!route.empty()) routes.push_back(route);
+            Individual refed(p11, routes);
+            assert(refed.eval.penalizedCost == member->eval.penalizedCost);
+            assert(refed.eval.distance == member->eval.penalizedCost);
+        }
+        std::cout << "every feasible member was accepted back as an initial solution" << std::endl;
+    }
+
     std::cout << "======== ALL TESTS PASSED ========" << std::endl;
     return 0;
 }

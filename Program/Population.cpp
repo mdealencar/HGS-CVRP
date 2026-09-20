@@ -224,6 +224,16 @@ const Individual * Population::getBestFound()
 	else return NULL;
 }
 
+std::vector < const Individual * > Population::getFeasibleSubpop() const
+{
+	return std::vector < const Individual * >(feasibleSubpop.begin(), feasibleSubpop.end());
+}
+
+std::vector < const Individual * > Population::getInfeasibleSubpop() const
+{
+	return std::vector < const Individual * >(infeasibleSubpop.begin(), infeasibleSubpop.end());
+}
+
 void Population::printState(int nbIter, int nbIterNoImprovement)
 {
 	if (params.verbose)

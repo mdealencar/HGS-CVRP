@@ -77,6 +77,16 @@ class Population
    // Accesses the best found solution at all time
    const Individual * getBestFound();
 
+   // Accesses every feasible individual, ordered by increasing cost, the best one first. The
+   // pointers are owned by the population and are invalidated by anything that changes it, on the
+   // same terms as the accessors above.
+   std::vector < const Individual * > getFeasibleSubpop() const;
+
+   // Accesses every infeasible individual, ordered by increasing penalized cost. That cost depends
+   // on the penalty weights in force when it was last computed, which managePenalties keeps
+   // adapting, so it ranks these individuals against each other and means little on its own.
+   std::vector < const Individual * > getInfeasibleSubpop() const;
+
    // Prints population state
    void printState(int nbIter, int nbIterNoImprovement);
 
