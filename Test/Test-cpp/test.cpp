@@ -332,6 +332,74 @@ int main()
         std::remove(solPath.c_str());
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::cout << "-------- test.cpp #10 (initial population seeded with given solutions) -----" << std::endl;
+    {
+        ap = default_algorithm_parameters();
+        ap.mu = 1;              // the initial population is built from 4*mu individuals
+        ap.timeLimit = 0;
+        auto dist10 = euclidean_dist_mtx(x, y, true);
+        auto flat10 = flatten(dist10);
+
+        // Four distinct solutions, each within the capacity of both vehicles
+        std::vector<std::vector<std::vector<int>>> seeds = {
+            {{1, 2, 3, 4}, {5, 6, 7, 8, 9}},
+            {{1, 2, 3, 5}, {4, 6, 7, 8, 9}},
+            {{2, 3, 4, 5}, {1, 6, 7, 8, 9}},
+            {{1, 3, 4, 5}, {2, 6, 7, 8, 9}},
+        };
+
+        // Given the whole initial population, there is nothing left to generate at random, which the
+        // untouched random stream shows: drawing a random individual would consume from it
+        std::ostringstream logFull;
+        Params pFull(x.data(), y.data(), flat10.data(), s.data(), d.data(), n,
+                     v_cap, 100000000, 2, false, true, ap, logFull);
+        Genetic solverFull(pFull);
+        for (const auto& routes : seeds) solverFull.population.addIndividual(Individual(pFull, routes), false);
+        auto ranBeforeFull = pFull.ran;
+        solverFull.population.generatePopulation();
+        assert(pFull.ran == ranBeforeFull);
+        assert(logFull.str().find("STARTING FROM 4 GIVEN SOLUTIONS") != std::string::npos);
+        std::cout << "4 given, 4*mu = " << 4 * ap.mu << ": random stream untouched" << std::endl;
+
+        // One short of it, and the missing individual is drawn
+        std::ostringstream logShort;
+        Params pShort(x.data(), y.data(), flat10.data(), s.data(), d.data(), n,
+                      v_cap, 100000000, 2, false, true, ap, logShort);
+        Genetic solverShort(pShort);
+        for (size_t k = 0; k + 1 < seeds.size(); k++)
+            solverShort.population.addIndividual(Individual(pShort, seeds[k]), false);
+        auto ranBeforeShort = pShort.ran;
+        solverShort.population.generatePopulation();
+        assert(!(pShort.ran == ranBeforeShort));
+        assert(logShort.str().find("STARTING FROM 3 GIVEN SOLUTIONS") != std::string::npos);
+        std::cout << "3 given, 4*mu = " << 4 * ap.mu << ": the remaining one was generated" << std::endl;
+
+        // Without any given solution the trace, and the behaviour, are as before
+        std::ostringstream logNone;
+        Params pNone(x.data(), y.data(), flat10.data(), s.data(), d.data(), n,
+                     v_cap, 100000000, 2, false, true, ap, logNone);
+        Genetic solverNone(pNone);
+        solverNone.population.generatePopulation();
+        assert(logNone.str().find("GIVEN SOLUTIONS") == std::string::npos);
+
+        // A warm started run never reports a solution worse than the best one it was given
+        ap = default_algorithm_parameters();
+        ap.timeLimit = 0.5;
+        std::ostringstream logWarm;
+        Params pWarm(x.data(), y.data(), flat10.data(), s.data(), d.data(), n,
+                     v_cap, 100000000, 2, false, true, ap, logWarm);
+        Genetic solverWarm(pWarm);
+        Individual given(pWarm, seeds[0]);
+        solverWarm.population.addIndividual(given, false);
+        solverWarm.run();
+        const Individual* best = solverWarm.population.getBestFound();
+        assert(best != nullptr);
+        std::cout << "given cost = " << given.eval.penalizedCost
+                  << ", warm started run found " << best->eval.penalizedCost << std::endl;
+        assert(best->eval.penalizedCost <= given.eval.penalizedCost);
+    }
+
     std::cout << "======== ALL TESTS PASSED ========" << std::endl;
     return 0;
 }

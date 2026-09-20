@@ -5,9 +5,23 @@
 
 void Population::generatePopulation()
 {
-	if (params.verbose) params.logStream << "----- BUILDING INITIAL POPULATION" << std::endl;
-	for (int i = 0; i < 4*params.ap.mu && (i == 0 || params.ap.timeLimit == 0 || params.elapsedSeconds() < params.ap.timeLimit) ; i++)
+	// Individuals given before the run count towards the initial population, so that supplying
+	// starting solutions displaces random ones instead of being generated on top of them
+	const int nbGiven = (int)(feasibleSubpop.size() + infeasibleSubpop.size());
+	if (params.verbose)
 	{
+		params.logStream << "----- BUILDING INITIAL POPULATION";
+		if (nbGiven > 0) params.logStream << ", STARTING FROM " << nbGiven << " GIVEN SOLUTIONS";
+		params.logStream << std::endl;
+	}
+
+	for (int i = nbGiven; i < 4*params.ap.mu ; i++)
+	{
+		// One individual is always generated when there is nothing to select from yet, even if the
+		// time limit is already spent, so that the genetic algorithm never starts on an empty population
+		const bool isPopulationEmpty = feasibleSubpop.empty() && infeasibleSubpop.empty();
+		if (!isPopulationEmpty && params.ap.timeLimit != 0 && params.elapsedSeconds() >= params.ap.timeLimit) break;
+
 		Individual randomIndiv(params);
 		split.generalSplit(randomIndiv, params.nbVehicles);
 		localSearch.run(randomIndiv, params.penaltyCapacity, params.penaltyDuration);
