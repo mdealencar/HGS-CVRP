@@ -86,7 +86,7 @@ Individual::Individual(Params & params, const std::vector < std::vector <int> > 
 		if (eval.capacityExcess >= MY_EPSILON) reason << "the vehicle capacity by " << eval.capacityExcess;
 		if (eval.capacityExcess >= MY_EPSILON && eval.durationExcess >= MY_EPSILON) reason << " and ";
 		if (eval.durationExcess >= MY_EPSILON) reason << "the duration limit by " << eval.durationExcess;
-		reason << ". Set allowInfeasible to seed the search with it regardless.";
+		reason << ".";
 		throw std::invalid_argument(reason.str());
 	}
 }
