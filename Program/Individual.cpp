@@ -1,4 +1,5 @@
 #include "Individual.h"
+#include <stdexcept>
 
 void Individual::evaluateCompleteCost(const Params & params)
 {
@@ -67,15 +68,15 @@ Individual::Individual(Params & params, std::string fileName) : Individual(param
 			inputFile >> inputString;
 		}
 		if (inputString == "Cost") inputFile >> readCost;
-		else throw std::string("Unexpected token in input solution");
+		else throw std::runtime_error("Unexpected token in input solution");
 
 		// Some safety checks and printouts
 		evaluateCompleteCost(params);
-		if ((int)chromT.size() != params.nbClients) throw std::string("Input solution does not contain the correct number of clients");
-		if (!eval.isFeasible) throw std::string("Input solution is infeasible");
-		if (eval.penalizedCost != readCost)throw std::string("Input solution has a different cost than announced in the file");
+		if ((int)chromT.size() != params.nbClients) throw std::invalid_argument("Input solution does not contain the correct number of clients");
+		if (!eval.isFeasible) throw std::invalid_argument("Input solution is infeasible");
+		if (eval.penalizedCost != readCost)throw std::invalid_argument("Input solution has a different cost than announced in the file");
 		if (params.verbose) params.logStream << "----- INPUT SOLUTION HAS BEEN SUCCESSFULLY READ WITH COST " << eval.penalizedCost << std::endl;
 	}
 	else 
-		throw std::string("Impossible to open solution file provided in input in : " + fileName);
+		throw std::runtime_error("Impossible to open solution file provided in input in : " + fileName);
 }

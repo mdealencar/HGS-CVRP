@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <cmath>
+#include <stdexcept>
 #include "InstanceCVRPLIB.h"
 
 InstanceCVRPLIB::InstanceCVRPLIB(std::string pathToInstance, bool isRoundingInteger = true)
@@ -25,10 +26,10 @@ InstanceCVRPLIB::InstanceCVRPLIB(std::string pathToInstance, bool isRoundingInte
 			else if (content == "CAPACITY")	inputFile >> content2 >> vehicleCapacity;
 			else if (content == "DISTANCE") { inputFile >> content2 >> durationLimit; isDurationConstraint = true; }
 			else if (content == "SERVICE_TIME")	inputFile >> content2 >> serviceTimeData;
-			else throw std::string("Unexpected data in input file: " + content);
+			else throw std::runtime_error("Unexpected data in input file: " + content);
 		}
-		if (nbClients <= 0) throw std::string("Number of nodes is undefined");
-		if (vehicleCapacity == 1.e30) throw std::string("Vehicle capacity is undefined");
+		if (nbClients <= 0) throw std::runtime_error("Number of nodes is undefined");
+		if (vehicleCapacity == 1.e30) throw std::runtime_error("Vehicle capacity is undefined");
 
 		x_coords = std::vector<double>(nbClients + 1);
 		y_coords = std::vector<double>(nbClients + 1);
@@ -46,12 +47,12 @@ InstanceCVRPLIB::InstanceCVRPLIB(std::string pathToInstance, bool isRoundingInte
 		for (int i = 0; i <= nbClients; i++)
 		{
 			inputFile >> node_number >> x_coords[i] >> y_coords[i];
-			if (node_number != i + 1) throw std::string("The node numbering is not in order.");
+			if (node_number != i + 1) throw std::runtime_error("The node numbering is not in order.");
 		}
 
 		// Reading demand information
 		inputFile >> content;
-		if (content != "DEMAND_SECTION") throw std::string("Unexpected data in input file: " + content);
+		if (content != "DEMAND_SECTION") throw std::runtime_error("Unexpected data in input file: " + content);
 		for (int i = 0; i <= nbClients; i++)
 		{
 			inputFile >> content >> demands[i];
@@ -75,10 +76,10 @@ InstanceCVRPLIB::InstanceCVRPLIB(std::string pathToInstance, bool isRoundingInte
 
 		// Reading depot information (in all current instances the depot is represented as node 1, the program will return an error otherwise)
 		inputFile >> content >> content2 >> content3 >> content3;
-		if (content != "DEPOT_SECTION") throw std::string("Unexpected data in input file: " + content);
-		if (content2 != "1") throw std::string("Expected depot index 1 instead of " + content2);
-		if (content3 != "EOF") throw std::string("Unexpected data in input file: " + content3);
+		if (content != "DEPOT_SECTION") throw std::runtime_error("Unexpected data in input file: " + content);
+		if (content2 != "1") throw std::runtime_error("Expected depot index 1 instead of " + content2);
+		if (content3 != "EOF") throw std::runtime_error("Unexpected data in input file: " + content3);
 	}
 	else
-		throw std::string("Impossible to open instance file: " + pathToInstance);
+		throw std::runtime_error("Impossible to open instance file: " + pathToInstance);
 }

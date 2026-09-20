@@ -43,7 +43,6 @@ int main(int argc, char *argv[])
 			solver.population.exportSearchProgress(commandline.pathSolution + ".PG.csv", commandline.pathInstance);
 		}
 	}
-	catch (const string& e) { std::cout << "EXCEPTION | " << e << std::endl; }
 	catch (const std::exception& e) { std::cout << "EXCEPTION | " << e.what() << std::endl; }
 	return 0;
 }

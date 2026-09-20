@@ -91,6 +91,8 @@ public:
 	// - service_time and demands must each contain at least nbNodes values.
 	// - If x_coords and y_coords are non-null, each must contain at least nbNodes values.
 	// - To indicate "coordinates not provided" (and thus disable coordinate-based SWAP*), pass nullptr for both.
+	// Throws std::invalid_argument if the distances or demands are on a scale that risks
+	// numerical instability, or if nbVeh is too small to service the total demand.
 	Params(const double* x_coords,
 		const double* y_coords,
 		const double* dist_mtx,
