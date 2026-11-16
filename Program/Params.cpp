@@ -79,6 +79,11 @@ Params::Params(
 		for (int j = 0; j <= nbClients; j++)
 			if (timeCost(i, j) > maxDist) maxDist = timeCost(i, j);
 
+	// Detection of an asymmetric depot row and column, which makes the orientation of a route matter
+	isDepotAsymmetric = false;
+	for (int i = 1; i <= nbClients; i++)
+		if (timeCost(0, i) != timeCost(i, 0)) isDepotAsymmetric = true;
+
 	// Calculation of the correlated vertices for each customer (for the granular restriction)
 	correlatedVertices = std::vector<std::vector<int> >(nbClients + 1);
 	std::vector<std::set<int> > setCorrelatedVertices = std::vector<std::set<int> >(nbClients + 1);

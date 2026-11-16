@@ -84,6 +84,7 @@ public:
 	inline double timeCost(int i, int j) const { return timeCost_[i * timeCostN_ + j]; }
 	std::vector< std::vector< int > > correlatedVertices;	// Neighborhood restrictions: For each client, list of nearby customers
 	bool areCoordinatesProvided;                            // True when both coordinate pointers are non-null
+	bool isDepotAsymmetric;                                 // True when timeCost(0, i) != timeCost(i, 0) for some client i
 
 	// Initialization from a given data set.
 	// Contract:

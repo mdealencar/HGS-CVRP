@@ -23,6 +23,11 @@ void LocalSearch::run(Individual & indiv, double penaltyCapacityLS, double penal
 		for (int posU = 0; posU < params.nbClients; posU++)
 		{
 			nodeU = &clients[orderNodes[posU]];
+
+			// Reversal moves on the route of nodeU, tested before reading whenLastTestedRI so that a reversal triggers the re-evaluation of the RI moves of nodeU
+			moveReverseRoute(nodeU->route);
+			if (params.isDepotAsymmetric) moveReverseRoute(nodeU->route, true);
+
 			int lastTestRINodeU = nodeU->whenLastTestedRI;
 			nodeU->whenLastTestedRI = nbMoves;
 			for (int posV = 0; posV < (int)params.correlatedVertices[nodeU->cour].size(); posV++)
@@ -310,34 +315,7 @@ bool LocalSearch::move6()
 
 bool LocalSearch::move7()
 {
-	if (nodeU->position > nodeV->position) return false;
-
-	double cost = params.timeCost(nodeUIndex, nodeVIndex) + params.timeCost(nodeXIndex, nodeYIndex) - params.timeCost(nodeUIndex, nodeXIndex) - params.timeCost(nodeVIndex, nodeYIndex) + nodeV->cumulatedReversalDistance - nodeX->cumulatedReversalDistance;
-
-	if (cost > -MY_EPSILON) return false;
-	if (nodeU->next == nodeV) return false;
-
-	Node * nodeNum = nodeX->next;
-	nodeX->prev = nodeNum;
-	nodeX->next = nodeY;
-
-	while (nodeNum != nodeV)
-	{
-		Node * temp = nodeNum->next;
-		nodeNum->next = nodeNum->prev;
-		nodeNum->prev = temp;
-		nodeNum = temp;
-	}
-
-	nodeV->next = nodeV->prev;
-	nodeV->prev = nodeU;
-	nodeU->next = nodeV;
-	nodeY->prev = nodeX;
-
-	nbMoves++; // Increment move counter before updating route data
-	searchCompleted = false;
-	updateRouteData(routeU);
-	return true;
+	return nodeU->position <= nodeV->position && moveReverseSegment(nodeU, nodeV);
 }
 
 bool LocalSearch::move8()
@@ -480,6 +458,32 @@ bool LocalSearch::move9()
 	updateRouteData(routeU);
 	updateRouteData(routeV);
 	return true;
+}
+
+bool LocalSearch::moveReverseSegment(Node * U, Node * V)
+{
+	Node * X = U->next;
+	Node * Y = V->next;
+	double cost = params.timeCost(U->cour, V->cour) + params.timeCost(X->cour, Y->cour) - params.timeCost(U->cour, X->cour) - params.timeCost(V->cour, Y->cour) + V->cumulatedReversalDistance - X->cumulatedReversalDistance;
+
+	if (cost > -MY_EPSILON) return false;
+	if (X == V) return false;
+
+	reverseSegment(X, V);
+	nbMoves++; // Increment move counter before updating route data
+	searchCompleted = false;
+	updateRouteData(U->route);
+	return true;
+}
+
+bool LocalSearch::moveReverseRoute(Route * myRoute, bool keepFirst)
+{
+	// A reversal depends only on the route, and right after an applied one the same reversal cannot improve
+	int & whenLastTested = keepFirst ? myRoute->whenLastTestedReversalAfterFirst : myRoute->whenLastTestedReversal;
+	if (myRoute->whenLastModified <= whenLastTested) return false;
+	bool isApplied = myRoute->nbCustomers > 1 && moveReverseSegment(keepFirst ? myRoute->depot->next : myRoute->depot, myRoute->depot->prev->prev);
+	whenLastTested = nbMoves;
+	return isApplied;
 }
 
 bool LocalSearch::swapStar()
@@ -659,6 +663,23 @@ void LocalSearch::swapNode(Node * U, Node * V)
 	V->route = myRouteU;
 }
 
+void LocalSearch::reverseSegment(Node * first, Node * last)
+{
+	Node * before = first->prev;
+	Node * after = last->next;
+	for (Node * node = first; node != after; )
+	{
+		Node * temp = node->next;
+		node->next = node->prev;
+		node->prev = temp;
+		node = temp;
+	}
+	before->next = last;
+	last->prev = before;
+	first->next = after;
+	after->prev = first;
+}
+
 void LocalSearch::updateRouteData(Route * myRoute)
 {
 	int myplace = 0;
@@ -751,6 +772,8 @@ void LocalSearch::loadIndividual(const Individual & indiv)
 		}
 		updateRouteData(&routes[r]);
 		routes[r].whenLastTestedSWAPStar = -1;
+		routes[r].whenLastTestedReversal = -1;
+		routes[r].whenLastTestedReversalAfterFirst = -1;
 		for (int i = 1; i <= params.nbClients; i++) // Initializing memory structures
 			bestInsertClient[r][i].whenLastCalculated = -1;
 	}

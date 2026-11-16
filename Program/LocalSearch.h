@@ -34,6 +34,8 @@ struct Route
 	int nbCustomers;					// Number of customers visited in the route
 	int whenLastModified;				// "When" this route has been last modified
 	int whenLastTestedSWAPStar;			// "When" the SWAP* moves for this route have been last tested
+	int whenLastTestedReversal;			// "When" the reversal of this route has been last tested
+	int whenLastTestedReversalAfterFirst;	// "When" the reversal of this route after its first customer has been last tested
 	Node * depot;						// Pointer to the associated depot
 	double duration;					// Total time on the route
 	double load;						// Total load on the route
@@ -165,6 +167,10 @@ private:
 	bool move8(); // If route(U) != route(V), replace (U,X) and (V,Y) by (U,V) and (X,Y)
 	bool move9(); // If route(U) != route(V), replace (U,X) and (V,Y) by (U,Y) and (V,X)
 
+	/* ROUTE REVERSAL MOVES (ONLY IMPROVING WITH AN ASYMMETRIC DISTANCE MATRIX) */
+	bool moveReverseSegment(Node * U, Node * V); // If V follows U in their route, replace (U,X) and (V,Y) by (U,V) and (X,Y) (2-OPT, also behind move7)
+	bool moveReverseRoute(Route * myRoute, bool keepFirst = false); // Reverse the whole route, or the route after its first customer (tested again only once the route has changed)
+
 	/* SUB-ROUTINES FOR EFFICIENT SWAP* EVALUATIONS */
 	bool swapStar(); // Calculates all SWAP* between routeU and routeV and apply the best improving move
 	double getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& bestPosition); // Calculates the insertion cost and position in the route of V, where V is omitted
@@ -173,6 +179,7 @@ private:
 	/* ROUTINES TO UPDATE THE SOLUTIONS */
 	static void insertNode(Node * U, Node * V);		// Solution update: Insert U after V
 	static void swapNode(Node * U, Node * V) ;		// Solution update: Swap U and V							   
+	static void reverseSegment(Node * first, Node * last);	// Solution update: Reverse the sequence from first to last (same route, first visited before last)
 	void updateRouteData(Route * myRoute);			// Updates the preprocessed data of a route
 
 	public:
