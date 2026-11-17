@@ -73,11 +73,22 @@ Params::Params(
 			logStream << "----- FLEET SIZE SPECIFIED: SET TO " << nbVehicles << " VEHICLES" << std::endl;
 	}
 
-	// Calculation of the maximum distance
+	// Calculation of the maximum distance and detection of the asymmetries
 	maxDist = 0.;
+	isDepotAsymmetric = false;
+	bool areClientsSymmetric = true;
 	for (int i = 0; i <= nbClients; i++)
 		for (int j = 0; j <= nbClients; j++)
+		{
 			if (timeCost(i, j) > maxDist) maxDist = timeCost(i, j);
+			if (i == 0 && j > 0 && timeCost(0, j) != timeCost(j, 0)) isDepotAsymmetric = true;
+			if (0 < i && i < j && timeCost(i, j) != timeCost(j, i) && !isDepotClone(i) && !isDepotClone(j)) areClientsSymmetric = false;
+		}
+
+	// Asymmetry confined to the connections of the depot and of its clones (e.g. an open CVRP with free return legs,
+	// whose clones are slack clients that fill the routes): the orientation of a route without clones then matters
+	// only through its first and last clients, which the local search exploits
+	isAsymmetricOnlyAtDepot = isDepotAsymmetric && areClientsSymmetric;
 
 	// Calculation of the correlated vertices for each customer (for the granular restriction)
 	correlatedVertices = std::vector<std::vector<int> >(nbClients + 1);
