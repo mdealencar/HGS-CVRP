@@ -85,6 +85,8 @@ public:
 	std::vector< std::vector< int > > correlatedVertices;	// Neighborhood restrictions: For each client, list of nearby customers
 	bool areCoordinatesProvided;                            // True when both coordinate pointers are non-null
 	bool isDepotAsymmetric;                                 // True when timeCost(0, i) != timeCost(i, 0) for some client i
+	bool isAsymmetricOnlyAtDepot;                           // True when, moreover, timeCost(i, j) == timeCost(j, i) for all clients i, j that are not depot clones: the connections of the depot and of its clones are the only asymmetry
+	inline bool isDepotClone(int i) const { return timeCost(0, i) == 0. && timeCost(i, 0) == 0.; } // True when client i is at the depot (e.g. a slack client)
 
 	// Initialization from a given data set.
 	// Contract:

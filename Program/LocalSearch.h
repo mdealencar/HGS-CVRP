@@ -41,6 +41,9 @@ struct Route
 	double load;						// Total load on the route
 	double reversalDistance;			// Difference of cost if the route is reversed
 	double penalty;						// Current sum of load and duration penalties
+	bool hasDepotClone;					// If params.isAsymmetricOnlyAtDepot, true when the route visits a depot clone (see params.isDepotClone)
+	double depotAsymmetryFirst;			// If params.isAsymmetricOnlyAtDepot, depotAsymmetry of the first client (used in SWAP*)
+	double depotAsymmetryLast;			// If params.isAsymmetricOnlyAtDepot, depotAsymmetry of the last client (used in SWAP*)
 	double polarAngleBarycenter;		// Polar angle of the barycenter of the route
 	CircleSector sector;				// Circle sector associated to the set of customers
 };
@@ -58,6 +61,7 @@ struct Node
 	double cumulatedTime;				// Cumulated time on this route until the customer (including itself)
 	double cumulatedReversalDistance;	// Difference of cost if the segment of route (0...cour) is reversed (useful for 2-opt moves with asymmetric problems)
 	double deltaRemoval;				// Difference of cost in the current route if the node is removed (used in SWAP*)
+	double depotAsymmetry;				// params.timeCost(0, cour) - params.timeCost(cour, 0) (used in SWAP*)
 };
 
 // Structure used in SWAP* to remember the three best insertion positions of a customer in a given route
@@ -66,6 +70,8 @@ struct ThreeBestInsert
 	int whenLastCalculated;
 	double bestCost[3];
 	Node * bestLocation[3];
+	double costFront;		// Cost of the insertion after the depot
+	double costBack;		// Cost of the insertion after the last customer
 
 	void compareAndAdd(double costInsert, Node * placeInsert)
 	{
@@ -128,6 +134,8 @@ private:
 	std::vector < Node > depotsEnd;				// Duplicate of the depots to mark the end of the routes
 	std::vector < Route > routes;				// Elements representing routes
 	std::vector < std::vector < ThreeBestInsert > > bestInsertClient;   // (SWAP*) For each route and node, storing the cheapest insertion cost 
+	std::vector < double > orientedInteriorCost;		// (SWAP*) For each node, cheapest insertion in the other route that changes its extremes when the removed customer is not an extreme, priced reversed
+	std::vector < Node * > orientedInteriorPosition;	// (SWAP*) Position of that insertion (NULL if none)
 
 	/* TEMPORARY VARIABLES USED IN THE LOCAL SEARCH LOOPS */
 	// nodeUPrev -> nodeU -> nodeX -> nodeXNext
@@ -173,7 +181,9 @@ private:
 
 	/* SUB-ROUTINES FOR EFFICIENT SWAP* EVALUATIONS */
 	bool swapStar(); // Calculates all SWAP* between routeU and routeV and apply the best improving move
-	double getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& bestPosition); // Calculates the insertion cost and position in the route of V, where V is omitted
+	double getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& bestPosition, double & costInPlace); // Calculates the insertion cost and position in the route of V, where V is omitted (costInPlace: cost of the insertion in the place of V)
+	void preprocessOrientedInsertions(Route * R1, Route * R2); // Preprocess, for the nodes of route R1, orientedInteriorCost and orientedInteriorPosition in route R2
+	double getCheapestInsertOrientedAtExtreme(Node * U, Node * V, double bestCost, Node *& bestPosition, double costInPlace); // Re-prices the result of getCheapestInsertSimultRemoval with the resulting route in its cheaper orientation, when V is an extreme of its route (requires params.isAsymmetricOnlyAtDepot and routes without depot clones)
 	void preprocessInsertions(Route * R1, Route * R2); // Preprocess all insertion costs of nodes of route R1 in route R2
 
 	/* ROUTINES TO UPDATE THE SOLUTIONS */

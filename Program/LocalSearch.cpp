@@ -490,13 +490,27 @@ bool LocalSearch::swapStar()
 {
 	SwapStarElement myBestSwapStar;
 
+	// Orientation-aware pricing starts from both routes in their cheaper orientation
+	const bool isOrientationAware = params.isAsymmetricOnlyAtDepot && !routeU->hasDepotClone && !routeV->hasDepotClone;
+	if (isOrientationAware)
+	{
+		moveReverseRoute(routeU);
+		moveReverseRoute(routeV);
+	}
+
 	// Preprocessing insertion costs
 	preprocessInsertions(routeU, routeV);
 	preprocessInsertions(routeV, routeU);
+	if (isOrientationAware)
+	{
+		preprocessOrientedInsertions(routeU, routeV);
+		preprocessOrientedInsertions(routeV, routeU);
+	}
 
 	// Evaluating the moves
 	for (nodeU = routeU->depot->next; !nodeU->isDepot; nodeU = nodeU->next)
 	{
+		const bool isUInterior = nodeU->position > 1 && nodeU->position < routeU->nbCustomers;
 		for (nodeV = routeV->depot->next; !nodeV->isDepot; nodeV = nodeV->next)
 		{
 			double deltaPenRouteU = penaltyExcessLoad(routeU->load + params.cli[nodeV->cour].demand - params.cli[nodeU->cour].demand) - routeU->penalty;
@@ -510,10 +524,27 @@ bool LocalSearch::swapStar()
 				mySwapStar.V = nodeV;
 
 				// Evaluate best reinsertion cost of U in the route of V where V has been removed
-				double extraV = getCheapestInsertSimultRemoval(nodeU, nodeV, mySwapStar.bestPositionU);
+				double costInPlaceV;
+				double extraV = getCheapestInsertSimultRemoval(nodeU, nodeV, mySwapStar.bestPositionU, costInPlaceV);
 
 				// Evaluate best reinsertion cost of V in the route of U where U has been removed
-				double extraU = getCheapestInsertSimultRemoval(nodeV, nodeU, mySwapStar.bestPositionV);
+				double costInPlaceU;
+				double extraU = getCheapestInsertSimultRemoval(nodeV, nodeU, mySwapStar.bestPositionV, costInPlaceU);
+
+				// When the depot connections are the only asymmetry of the two routes, a route may only gain from the move once reversed, so it is priced in its cheaper orientation
+				if (isOrientationAware)
+				{
+					if (nodeV->position > 1 && nodeV->position < routeV->nbCustomers)
+					{
+						if (orientedInteriorCost[nodeU->cour] < extraV) { extraV = orientedInteriorCost[nodeU->cour]; mySwapStar.bestPositionU = orientedInteriorPosition[nodeU->cour]; }
+					}
+					else extraV = getCheapestInsertOrientedAtExtreme(nodeU, nodeV, extraV, mySwapStar.bestPositionU, costInPlaceV);
+					if (isUInterior)
+					{
+						if (orientedInteriorCost[nodeV->cour] < extraU) { extraU = orientedInteriorCost[nodeV->cour]; mySwapStar.bestPositionV = orientedInteriorPosition[nodeV->cour]; }
+					}
+					else extraU = getCheapestInsertOrientedAtExtreme(nodeV, nodeU, extraU, mySwapStar.bestPositionV, costInPlaceU);
+				}
 
 				// Evaluating final cost
 				mySwapStar.moveCost = deltaPenRouteU + nodeU->deltaRemoval + extraU + deltaPenRouteV + nodeV->deltaRemoval + extraV
@@ -572,10 +603,17 @@ bool LocalSearch::swapStar()
 	searchCompleted = false;
 	updateRouteData(routeU);
 	updateRouteData(routeV);
+
+	// Realize the gain of the orientations that the move was priced with
+	if (isOrientationAware)
+	{
+		moveReverseRoute(routeU);
+		moveReverseRoute(routeV);
+	}
 	return true;
 }
 
-double LocalSearch::getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& bestPosition)
+inline double LocalSearch::getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& bestPosition, double & costInPlace)
 {
 	ThreeBestInsert * myBestInsert = &bestInsertClient[V->route->cour][U->cour];
 	bool found = false;
@@ -598,13 +636,93 @@ double LocalSearch::getCheapestInsertSimultRemoval(Node * U, Node * V, Node *& b
 	}
 
 	// Compute insertion in the place of V
-	double deltaCost = params.timeCost(V->prev->cour, U->cour) + params.timeCost(U->cour, V->next->cour) - params.timeCost(V->prev->cour, V->next->cour);
-	if (!found || deltaCost < bestCost)
+	costInPlace = params.timeCost(V->prev->cour, U->cour) + params.timeCost(U->cour, V->next->cour) - params.timeCost(V->prev->cour, V->next->cour);
+	if (!found || costInPlace < bestCost)
 	{
 		bestPosition = V->prev;
-		bestCost = deltaCost;
+		bestCost = costInPlace;
 	}
 
+	return bestCost;
+}
+
+void LocalSearch::preprocessOrientedInsertions(Route * R1, Route * R2)
+{
+	// ASSUMES params.isAsymmetricOnlyAtDepot, that neither route visits a depot clone and that R2 is in its cheaper
+	// orientation, so that a[first] <= a[last] (a = depotAsymmetry): the depot connections are then the only asymmetry, and
+	// reversing a route changes its cost by a[last] - a[first]. A route priced in its cheaper orientation costs its current
+	// cost plus min(0, a[last] - a[first]), a term that only an insertion changing an extreme of the route can make
+	// negative. When the customer removed from R2 is not an extreme, these insertions are the one before the first customer
+	// (pays off reversed only if a[U] > a[last]) and the one after the last customer (only if a[U] < a[first]): their price
+	// does not depend on the removed customer, so it is computed once per node instead of once per pair of nodes
+	const double aFirst = R2->depotAsymmetryFirst;
+	const double aLast = R2->depotAsymmetryLast;
+	Node * last = R2->depot->prev->prev;
+	for (Node * U = R1->depot->next; !U->isDepot; U = U->next)
+	{
+		ThreeBestInsert * myBestInsert = &bestInsertClient[R2->cour][U->cour];
+		const double aU = U->depotAsymmetry;
+		double bestCost = 1.e30;
+		Node * bestPosition = NULL;
+		if (aU > aLast) { bestCost = myBestInsert->costFront + aLast - aU; bestPosition = R2->depot; }
+		if (aU < aFirst && myBestInsert->costBack + aU - aFirst < bestCost) { bestCost = myBestInsert->costBack + aU - aFirst; bestPosition = last; }
+		orientedInteriorCost[U->cour] = bestCost;
+		orientedInteriorPosition[U->cour] = bestPosition;
+	}
+}
+
+double LocalSearch::getCheapestInsertOrientedAtExtreme(Node * U, Node * V, double bestCost, Node *& bestPosition, double costInPlace)
+{
+	// ASSUMES the conditions of preprocessOrientedInsertions, and that V is the first or the last customer of its route. Its
+	// neighbor N becomes an extreme of the route without V, opposite to the other extreme O. The resulting extremes are
+	// (U, O) for an insertion in the place of V, (N, U) for one at the end opposite to V and (N, O) for one between two
+	// customers. The prices of the insertions at the extremes are cached (costInPlace, costFront, costBack), so no
+	// distance is looked up unless the insertions between two customers are not among the three cached locations
+	Route * myRoute = V->route;
+	const bool isVFirst = V->prev->isDepot;
+	const bool isVLast = V->next->isDepot;
+
+	// A route of one customer has the same cost in both orientations
+	if (isVFirst && isVLast) return bestCost;
+
+	ThreeBestInsert * myBestInsert = &bestInsertClient[myRoute->cour][U->cour];
+	Node * N = isVFirst ? V->next : V->prev;
+	const double aU = U->depotAsymmetry;
+	const double aN = N->depotAsymmetry;
+	const double aO = isVFirst ? myRoute->depotAsymmetryLast : myRoute->depotAsymmetryFirst;
+	const double costInPlaceOriented = isVFirst ? costInPlace + aO - aU : costInPlace + aU - aO;
+	const double costOppositeOriented = isVFirst ? myBestInsert->costBack + aU - aN : myBestInsert->costFront + aN - aU;
+	const bool isInPlace = (isVFirst ? aU > aO : aU < aO) & (costInPlaceOriented < bestCost);
+	const bool isOpposite = (isVFirst ? aU < aN : aU > aN) & (costOppositeOriented < bestCost);
+	const bool tryMiddle = isVFirst ? aN > aO : aN < aO;
+	if (!(isInPlace | isOpposite | tryMiddle)) return bestCost;
+
+	Node * depot = myRoute->depot;
+	Node * last = depot->prev->prev;
+	if (isInPlace) { bestCost = costInPlaceOriented; bestPosition = V->prev; }
+	if (isOpposite && costOppositeOriented < bestCost) { bestCost = costOppositeOriented; bestPosition = isVFirst ? last : depot; }
+	if (tryMiddle)
+	{
+		// Insertions between two customers keep the extremes (N, O): the cheapest of them is found by its distance alone,
+		// first among the three cached locations, else (when all three are extremes or next to V) by a scan
+		const double term = isVFirst ? aO - aN : aN - aO;
+		bool found = false;
+		for (int i = 0; i < 3 && !found; i++)
+		{
+			Node * X = myBestInsert->bestLocation[i];
+			if (X == NULL || X == depot || X == last || X == V || X->next == V) continue;
+			found = true;
+			if (myBestInsert->bestCost[i] + term < bestCost) { bestCost = myBestInsert->bestCost[i] + term; bestPosition = X; }
+		}
+		if (!found)
+		{
+			for (Node * X = isVFirst ? N : depot->next; X != (isVFirst ? last : N); X = X->next)
+			{
+				double cost = params.timeCost(X->cour, U->cour) + params.timeCost(U->cour, X->next->cour) - params.timeCost(X->cour, X->next->cour) + term;
+				if (cost < bestCost) { bestCost = cost; bestPosition = X; }
+			}
+		}
+	}
 	return bestCost;
 }
 
@@ -620,11 +738,14 @@ void LocalSearch::preprocessInsertions(Route * R1, Route * R2)
 			bestInsertClient[R2->cour][U->cour].whenLastCalculated = nbMoves;
 			bestInsertClient[R2->cour][U->cour].bestCost[0] = params.timeCost(0, U->cour) + params.timeCost(U->cour, R2->depot->next->cour) - params.timeCost(0, R2->depot->next->cour);
 			bestInsertClient[R2->cour][U->cour].bestLocation[0] = R2->depot;
+			bestInsertClient[R2->cour][U->cour].costFront = bestInsertClient[R2->cour][U->cour].bestCost[0];
+			double deltaCost = 0.;
 			for (Node * V = R2->depot->next; !V->isDepot; V = V->next)
 			{
-				double deltaCost = params.timeCost(V->cour, U->cour) + params.timeCost(U->cour, V->next->cour) - params.timeCost(V->cour, V->next->cour);
+				deltaCost = params.timeCost(V->cour, U->cour) + params.timeCost(U->cour, V->next->cour) - params.timeCost(V->cour, V->next->cour);
 				bestInsertClient[R2->cour][U->cour].compareAndAdd(deltaCost, V);
 			}
+			bestInsertClient[R2->cour][U->cour].costBack = deltaCost;
 		}
 	}
 }
@@ -694,6 +815,7 @@ void LocalSearch::updateRouteData(Route * myRoute)
 	mynode->cumulatedLoad = 0.;
 	mynode->cumulatedTime = 0.;
 	mynode->cumulatedReversalDistance = 0.;
+	myRoute->hasDepotClone = false;
 
 	bool firstIt = true;
 	while (!mynode->isDepot || firstIt)
@@ -709,6 +831,7 @@ void LocalSearch::updateRouteData(Route * myRoute)
 		mynode->cumulatedReversalDistance = myReversalDistance;
 		if (!mynode->isDepot)
 		{
+			if (params.isAsymmetricOnlyAtDepot && params.isDepotClone(mynode->cour)) myRoute->hasDepotClone = true;
 			cumulatedX += params.cli[mynode->cour].coordX;
 			cumulatedY += params.cli[mynode->cour].coordY;
 			if (firstIt) myRoute->sector.initialize(params.cli[mynode->cour].polarAngle);
@@ -722,6 +845,13 @@ void LocalSearch::updateRouteData(Route * myRoute)
 	myRoute->penalty = penaltyExcessDuration(mytime) + penaltyExcessLoad(myload);
 	myRoute->nbCustomers = myplace-1;
 	myRoute->reversalDistance = myReversalDistance;
+	if (params.isAsymmetricOnlyAtDepot && myRoute->nbCustomers > 0)
+	{
+		Node * first = myRoute->depot->next;
+		Node * last = myRoute->depot->prev->prev;
+		myRoute->depotAsymmetryFirst = first->depotAsymmetry;
+		myRoute->depotAsymmetryLast = last->depotAsymmetry;
+	}
 	// Remember "when" this route has been last modified (will be used to filter unnecessary move evaluations)
 	myRoute->whenLastModified = nbMoves ;
 
@@ -813,10 +943,13 @@ LocalSearch::LocalSearch(Params & params) : params (params)
 	depots = std::vector < Node >(params.nbVehicles);
 	depotsEnd = std::vector < Node >(params.nbVehicles);
 	bestInsertClient = std::vector < std::vector <ThreeBestInsert> >(params.nbVehicles, std::vector <ThreeBestInsert>(params.nbClients + 1));
+	orientedInteriorCost = std::vector < double >(params.nbClients + 1);
+	orientedInteriorPosition = std::vector < Node * >(params.nbClients + 1);
 
 	for (int i = 0; i <= params.nbClients; i++) 
 	{ 
 		clients[i].cour = i; 
+		clients[i].depotAsymmetry = params.timeCost(0, i) - params.timeCost(i, 0);
 		clients[i].isDepot = false; 
 	}
 	for (int i = 0; i < params.nbVehicles; i++)
