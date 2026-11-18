@@ -5,7 +5,13 @@ Forked from <https://github.com/vidalt/HGS-CVRP>
 
 # Motivation for the fork
 
-Better integration with the Python bindings [HybGenSea](https://github.com/mdealencar/PyHygese). No changes were made to the algorithm itself.
+Better integration with the Python bindings [HybGenSea](https://github.com/mdealencar/HybGenSea): initial solutions given as routes in memory, access to the final population, errors reported as exceptions and logging through a per-instance stream.
+
+The local search also differs from the original for asymmetric distance matrices:
+- it reverses a whole route, or a route after its first customer, whenever that is cheaper;
+- when the asymmetry is confined to the connections of the depot (e.g. an open CVRP whose return legs are free, possibly with depot clones: customers whose connections with the depot are free both ways), SWAP* prices each route in its cheaper orientation.
+
+Coordinates and symmetric distance matrices give the same results as the original algorithm.
 
 Relevant parts of the original project's README follows:
 
